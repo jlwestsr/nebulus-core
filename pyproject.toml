@@ -1,0 +1,60 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nebulus-core"
+version = "0.1.0"
+description = "Shared core library for the Nebulus AI ecosystem"
+readme = "README.md"
+authors = [{name = "JL West Sr", email = "labs@example.com"}]
+requires-python = ">=3.10"
+license = {text = "MIT"}
+dependencies = [
+    "click",
+    "rich",
+    "httpx",
+    "pydantic",
+    "chromadb",
+    "networkx",
+    "pandas",
+    "sqlalchemy",
+    "beautifulsoup4",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "black",
+    "flake8",
+    "pre-commit",
+]
+
+[project.scripts]
+nebulus = "nebulus_core.cli.main:cli"
+
+[project.entry-points."nebulus.platform"]
+# Platform projects register their adapters here via their own pyproject.toml
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.black]
+line-length = 88
+target-version = ['py310', 'py311']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.mypy_cache
+  | venv
+  | _build
+  | dist
+)/
+'''
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q"
+testpaths = ["tests"]
+pythonpath = ["src"]
