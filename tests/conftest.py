@@ -1,5 +1,7 @@
 """Shared test configuration and fixtures."""
 
+from pathlib import Path
+
 import pytest
 
 from nebulus_core.platform.base import ServiceInfo
@@ -30,6 +32,14 @@ class MockAdapter:
     @property
     def chroma_settings(self) -> dict:
         return {"mode": "embedded", "path": "/tmp/test-chroma"}
+
+    @property
+    def default_model(self) -> str:
+        return "test-model"
+
+    @property
+    def data_dir(self) -> Path:
+        return Path("/tmp/test-nebulus-data")
 
     def start_services(self) -> None:
         pass

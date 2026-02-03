@@ -1,5 +1,6 @@
 """Platform adapter protocol and service info model."""
 
+from pathlib import Path
 from typing import Protocol, runtime_checkable
 
 from pydantic import BaseModel
@@ -45,6 +46,16 @@ class PlatformAdapter(Protocol):
             For HTTP mode: {"mode": "http", "host": str, "port": int}
             For embedded mode: {"mode": "embedded", "path": str}
         """
+        ...
+
+    @property
+    def default_model(self) -> str:
+        """Default LLM model name for this platform."""
+        ...
+
+    @property
+    def data_dir(self) -> Path:
+        """Root directory for persistent data (graph, cache, etc.)."""
         ...
 
     def start_services(self) -> None:

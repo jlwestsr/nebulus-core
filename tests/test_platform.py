@@ -1,6 +1,7 @@
 """Tests for platform detection and adapter system."""
 
 import os
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -77,3 +78,14 @@ class TestMockAdapterProtocol:
     def test_mock_adapter_is_platform_adapter(self, mock_adapter: object) -> None:
         """MockAdapter should satisfy PlatformAdapter protocol."""
         assert isinstance(mock_adapter, PlatformAdapter)
+
+
+def test_adapter_has_default_model(mock_adapter):
+    """Adapter must expose a default model name."""
+    assert isinstance(mock_adapter.default_model, str)
+    assert len(mock_adapter.default_model) > 0
+
+
+def test_adapter_has_data_dir(mock_adapter):
+    """Adapter must expose a data directory path."""
+    assert isinstance(mock_adapter.data_dir, Path)
