@@ -20,6 +20,7 @@ dependencies = [
     "pandas",
     "sqlalchemy",
     "beautifulsoup4",
+    "pyyaml",
 ]
 
 [project.optional-dependencies]
