@@ -1,5 +1,7 @@
 """Memory management commands."""
 
+from pathlib import Path
+
 import click
 from rich.console import Console
 
@@ -15,16 +17,14 @@ def memory_group() -> None:
 def status(ctx: click.Context) -> None:
     """Show LTM system status and metrics."""
     console: Console = ctx.obj["console"]
-
-    # Lazy import to avoid startup cost when not used
-    from nebulus_core.memory.graph_store import GraphStore
-
     adapter = ctx.obj["adapter"]
-    chroma_settings = adapter.chroma_settings
 
     # Graph store status
     try:
-        graph = GraphStore()
+        from nebulus_core.memory.graph_store import GraphStore
+
+        graph_path = Path(adapter.data_dir) / "memory_graph.json"
+        graph = GraphStore(storage_path=graph_path)
         stats = graph.get_stats()
         console.print(
             f"[cyan]Knowledge Graph:[/cyan] {stats.node_count} nodes, "
@@ -39,9 +39,11 @@ def status(ctx: click.Context) -> None:
     try:
         from nebulus_core.vector.client import VectorClient
 
-        vec = VectorClient(settings=chroma_settings)
+        vec = VectorClient(settings=adapter.chroma_settings)
         collections = vec.list_collections()
-        console.print(f"[cyan]Vector Store:[/cyan] {len(collections)} collections")
+        console.print(
+            f"[cyan]Vector Store:[/cyan] {len(collections)} collections"
+        )
         for col in collections:
             console.print(f"  - {col}")
     except Exception as e:
@@ -58,13 +60,25 @@ def consolidate(ctx: click.Context) -> None:
     console.print("[cyan]Starting memory consolidation...[/cyan]")
 
     try:
+        from nebulus_core.llm.client import LLMClient
         from nebulus_core.memory.consolidator import Consolidator
+        from nebulus_core.memory.graph_store import GraphStore
+        from nebulus_core.vector.client import VectorClient
+        from nebulus_core.vector.episodic import EpisodicMemory
 
-        c = Consolidator(
-            chroma_settings=adapter.chroma_settings,
-            llm_base_url=adapter.llm_base_url,
+        vec_client = VectorClient(settings=adapter.chroma_settings)
+        episodic = EpisodicMemory(vec_client)
+        graph_path = Path(adapter.data_dir) / "memory_graph.json"
+        graph = GraphStore(storage_path=graph_path)
+        llm = LLMClient(base_url=adapter.llm_base_url)
+
+        consolidator = Consolidator(
+            episodic=episodic,
+            graph=graph,
+            llm=llm,
+            model=adapter.default_model,
         )
-        result = c.run()
-        console.print(f"[green]Consolidation complete.[/green] {result}")
+        result = consolidator.consolidate()
+        console.print(f"[green]Done.[/green] {result}")
     except Exception as e:
         console.print(f"[red]Consolidation failed:[/red] {e}")
