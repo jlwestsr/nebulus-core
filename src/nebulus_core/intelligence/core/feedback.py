@@ -66,9 +66,7 @@ class Feedback:
             "user_id": self.user_id,
             "outcome": self.outcome,
             "outcome_timestamp": (
-                self.outcome_timestamp.isoformat()
-                if self.outcome_timestamp
-                else None
+                self.outcome_timestamp.isoformat() if self.outcome_timestamp else None
             ),
         }
 
@@ -89,9 +87,7 @@ class Feedback:
             timestamp=datetime.fromisoformat(data["timestamp"]),
             query=data.get("query"),
             response=data.get("response"),
-            context=(
-                json.loads(data["context"]) if data.get("context") else None
-            ),
+            context=(json.loads(data["context"]) if data.get("context") else None),
             comment=data.get("comment"),
             user_id=data.get("user_id"),
             outcome=data.get("outcome"),
@@ -134,8 +130,7 @@ class FeedbackManager:
 
         conn = sqlite3.connect(self.db_path)
         try:
-            conn.execute(
-                """
+            conn.execute("""
                 CREATE TABLE IF NOT EXISTS feedback (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     feedback_type TEXT NOT NULL,
@@ -150,26 +145,19 @@ class FeedbackManager:
                     outcome_timestamp TEXT,
                     created_at TEXT DEFAULT CURRENT_TIMESTAMP
                 )
-                """
-            )
-            conn.execute(
-                """
+                """)
+            conn.execute("""
                 CREATE INDEX IF NOT EXISTS idx_feedback_type
                 ON feedback(feedback_type)
-                """
-            )
-            conn.execute(
-                """
+                """)
+            conn.execute("""
                 CREATE INDEX IF NOT EXISTS idx_feedback_rating
                 ON feedback(rating)
-                """
-            )
-            conn.execute(
-                """
+                """)
+            conn.execute("""
                 CREATE INDEX IF NOT EXISTS idx_feedback_timestamp
                 ON feedback(timestamp)
-                """
-            )
+                """)
             conn.commit()
         finally:
             conn.close()
@@ -333,9 +321,7 @@ class FeedbackManager:
             params.extend([limit, offset])
 
             cursor = conn.execute(query, params)
-            return [
-                Feedback.from_dict(dict(row)) for row in cursor.fetchall()
-            ]
+            return [Feedback.from_dict(dict(row)) for row in cursor.fetchall()]
         finally:
             conn.close()
 
@@ -491,15 +477,13 @@ class FeedbackManager:
         conn = sqlite3.connect(self.db_path)
         try:
             # Get overall satisfaction rate
-            cursor = conn.execute(
-                """
+            cursor = conn.execute("""
                 SELECT
                     COUNT(*) as total,
                     SUM(CASE WHEN rating > 0 THEN 1 ELSE 0 END) as positive,
                     SUM(CASE WHEN rating < 0 THEN 1 ELSE 0 END) as negative
                 FROM feedback
-                """
-            )
+                """)
             row = cursor.fetchone()
             total = row[0] or 0
             positive = row[1] or 0
@@ -529,8 +513,7 @@ class FeedbackManager:
             }
 
             # Get feedback on recommendations with outcomes
-            cursor = conn.execute(
-                """
+            cursor = conn.execute("""
                 SELECT
                     COUNT(*) as total,
                     SUM(CASE WHEN outcome LIKE '%success%'
@@ -540,8 +523,7 @@ class FeedbackManager:
                 FROM feedback
                 WHERE feedback_type = 'recommendation'
                   AND outcome IS NOT NULL
-                """
-            )
+                """)
             row = cursor.fetchone()
             outcome_total = row[0] or 0
             positive_outcomes = row[1] or 0
@@ -556,9 +538,7 @@ class FeedbackManager:
                     "total_with_outcomes": outcome_total,
                     "positive_outcomes": positive_outcomes,
                     "outcome_success_rate": (
-                        positive_outcomes / outcome_total
-                        if outcome_total > 0
-                        else 0
+                        positive_outcomes / outcome_total if outcome_total > 0 else 0
                     ),
                 },
                 "suggestions": self._generate_suggestions(
@@ -599,8 +579,7 @@ class FeedbackManager:
 
         if not suggestions:
             suggestions.append(
-                "Feedback is generally positive. "
-                "Continue monitoring for trends."
+                "Feedback is generally positive. " "Continue monitoring for trends."
             )
 
         return suggestions

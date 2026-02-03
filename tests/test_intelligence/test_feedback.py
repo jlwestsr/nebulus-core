@@ -87,9 +87,7 @@ class TestFeedbackManager:
 
         assert feedback_id > 0
 
-    def test_submit_feedback_with_context(
-        self, manager: FeedbackManager
-    ) -> None:
+    def test_submit_feedback_with_context(self, manager: FeedbackManager) -> None:
         """Test submitting feedback with context."""
         feedback_id = manager.submit_feedback(
             feedback_type=FeedbackType.SCORING,
@@ -127,16 +125,12 @@ class TestFeedbackManager:
         assert len(feedback) == 1
         assert "15% increase" in feedback[0].outcome
 
-    def test_record_outcome_not_found(
-        self, manager: FeedbackManager
-    ) -> None:
+    def test_record_outcome_not_found(self, manager: FeedbackManager) -> None:
         """Test recording outcome for non-existent feedback."""
         success = manager.record_outcome(999, "test outcome")
         assert not success
 
-    def test_get_feedback_filtered(
-        self, manager: FeedbackManager
-    ) -> None:
+    def test_get_feedback_filtered(self, manager: FeedbackManager) -> None:
         """Test filtering feedback by criteria."""
         # Submit multiple feedback entries
         manager.submit_feedback(
@@ -153,20 +147,14 @@ class TestFeedbackManager:
         )
 
         # Filter by type
-        results = manager.get_feedback(
-            feedback_type=FeedbackType.QUERY_RESULT
-        )
+        results = manager.get_feedback(feedback_type=FeedbackType.QUERY_RESULT)
         assert len(results) == 2
 
         # Filter by rating
-        results = manager.get_feedback(
-            min_rating=FeedbackRating.POSITIVE
-        )
+        results = manager.get_feedback(min_rating=FeedbackRating.POSITIVE)
         assert len(results) == 2
 
-        results = manager.get_feedback(
-            max_rating=FeedbackRating.NEUTRAL
-        )
+        results = manager.get_feedback(max_rating=FeedbackRating.NEUTRAL)
         assert len(results) == 1
 
     def test_get_summary(self, manager: FeedbackManager) -> None:
@@ -194,9 +182,7 @@ class TestFeedbackManager:
         assert summary.by_type["query_result"] == 2
         assert "Not helpful" in summary.recent_comments
 
-    def test_get_summary_by_type(
-        self, manager: FeedbackManager
-    ) -> None:
+    def test_get_summary_by_type(self, manager: FeedbackManager) -> None:
         """Test getting summary filtered by type."""
         manager.submit_feedback(
             feedback_type=FeedbackType.QUERY_RESULT,
@@ -215,9 +201,7 @@ class TestFeedbackManager:
         assert summary.total_count == 1
         assert summary.positive_count == 1
 
-    def test_get_negative_patterns(
-        self, manager: FeedbackManager
-    ) -> None:
+    def test_get_negative_patterns(self, manager: FeedbackManager) -> None:
         """Test getting patterns in negative feedback."""
         # Submit negative feedback on same query
         for _ in range(3):
@@ -233,9 +217,7 @@ class TestFeedbackManager:
         assert len(patterns) >= 1
         assert patterns[0]["count"] == 3
 
-    def test_get_feedback_for_refinement(
-        self, manager: FeedbackManager
-    ) -> None:
+    def test_get_feedback_for_refinement(self, manager: FeedbackManager) -> None:
         """Test getting refinement analysis."""
         # Submit varied feedback
         manager.submit_feedback(
@@ -256,9 +238,7 @@ class TestFeedbackManager:
         assert "suggestions" in analysis
         assert len(analysis["suggestions"]) > 0
 
-    def test_export_feedback(
-        self, manager: FeedbackManager, temp_db: Path
-    ) -> None:
+    def test_export_feedback(self, manager: FeedbackManager, temp_db: Path) -> None:
         """Test exporting feedback to file."""
         manager.submit_feedback(
             feedback_type=FeedbackType.QUERY_RESULT,
@@ -296,9 +276,7 @@ class TestFeedbackManager:
 class TestFeedbackTypes:
     """Tests for different feedback types."""
 
-    def test_all_feedback_types(
-        self, manager: FeedbackManager
-    ) -> None:
+    def test_all_feedback_types(self, manager: FeedbackManager) -> None:
         """Test that all feedback types can be submitted."""
         for fb_type in FeedbackType:
             feedback_id = manager.submit_feedback(
@@ -307,9 +285,7 @@ class TestFeedbackTypes:
             )
             assert feedback_id > 0
 
-    def test_all_rating_values(
-        self, manager: FeedbackManager
-    ) -> None:
+    def test_all_rating_values(self, manager: FeedbackManager) -> None:
         """Test that all rating values work."""
         for rating in FeedbackRating:
             feedback_id = manager.submit_feedback(

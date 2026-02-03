@@ -31,9 +31,12 @@ class VerticalTemplate:
     def _load_config(self, template_name: str) -> dict:
         """Load the bundled config.yaml for a template via importlib.resources."""
         try:
-            ref = pkg_resources.files(
-                f"nebulus_core.intelligence.templates.{template_name}"
-            ) / "config.yaml"
+            ref = (
+                pkg_resources.files(
+                    f"nebulus_core.intelligence.templates.{template_name}"
+                )
+                / "config.yaml"
+            )
             config_text = ref.read_text(encoding="utf-8")
             return yaml.safe_load(config_text)
         except (ModuleNotFoundError, FileNotFoundError) as e:

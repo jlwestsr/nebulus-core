@@ -83,9 +83,7 @@ class PIIDetector:
             re.compile(r"\b6(?:011|5\d{2})[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b"),
         ],
         PIIType.DATE_OF_BIRTH: [
-            re.compile(
-                r"\b(0[1-9]|1[0-2])[-/](0[1-9]|[12]\d|3[01])[-/](19|20)\d{2}\b"
-            ),
+            re.compile(r"\b(0[1-9]|1[0-2])[-/](0[1-9]|[12]\d|3[01])[-/](19|20)\d{2}\b"),
         ],
         PIIType.IP_ADDRESS: [
             re.compile(
@@ -280,9 +278,7 @@ class PIIDetector:
                             PIIMatch(
                                 pii_type=pii_type,
                                 value=matched_value,
-                                masked_value=self._mask_value(
-                                    matched_value, pii_type
-                                ),
+                                masked_value=self._mask_value(matched_value, pii_type),
                                 column=column,
                                 row_index=row_idx,
                             )
@@ -350,9 +346,7 @@ class PIIDetector:
             "PII Types Found:",
         ]
 
-        for pii_type, count in sorted(
-            report.pii_by_type.items(), key=lambda x: -x[1]
-        ):
+        for pii_type, count in sorted(report.pii_by_type.items(), key=lambda x: -x[1]):
             lines.append(f"  - {pii_type.value}: {count} occurrences")
 
         if report.pii_by_column:

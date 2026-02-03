@@ -122,8 +122,7 @@ class AuditLogger:
 
         conn = sqlite3.connect(self.db_path)
         try:
-            conn.execute(
-                """
+            conn.execute("""
                 CREATE TABLE IF NOT EXISTS audit_log (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     event_type TEXT NOT NULL,
@@ -138,27 +137,20 @@ class AuditLogger:
                     error_message TEXT,
                     created_at TEXT DEFAULT CURRENT_TIMESTAMP
                 )
-                """
-            )
+                """)
             # Create index for common queries
-            conn.execute(
-                """
+            conn.execute("""
                 CREATE INDEX IF NOT EXISTS idx_audit_timestamp
                 ON audit_log(timestamp)
-                """
-            )
-            conn.execute(
-                """
+                """)
+            conn.execute("""
                 CREATE INDEX IF NOT EXISTS idx_audit_event_type
                 ON audit_log(event_type)
-                """
-            )
-            conn.execute(
-                """
+                """)
+            conn.execute("""
                 CREATE INDEX IF NOT EXISTS idx_audit_user
                 ON audit_log(user_id)
-                """
-            )
+                """)
             conn.commit()
         finally:
             conn.close()

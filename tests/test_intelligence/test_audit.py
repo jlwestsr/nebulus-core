@@ -217,9 +217,7 @@ class TestAuditLogger:
         # Most recent should be first
         assert activity[0]["event_type"] == "query_sql"
 
-    def test_export_logs(
-        self, logger: AuditLogger, temp_db: Path
-    ) -> None:
+    def test_export_logs(self, logger: AuditLogger, temp_db: Path) -> None:
         """Test exporting logs to file."""
         logger.log_upload("table1", 10, ["col1"])
         logger.log_query("sql", "SELECT 1")
