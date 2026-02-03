@@ -1,0 +1,237 @@
+# Dealership Vertical Template
+# Configuration for auto dealership data intelligence
+
+name: dealership
+display_name: "Auto Dealership"
+version: "1.0"
+description: "Analyze inventory, sales, and service data for used car dealerships"
+
+# Primary key detection hints (checked in order)
+primary_keys:
+  - vin
+  - VIN
+  - stock_number
+  - stocknumber
+  - stock_no
+  - StockNumber
+  - Stock_Number
+  - stock
+
+# Expected data sources with required/optional columns
+data_sources:
+  inventory:
+    description: "Current vehicle inventory on the lot"
+    required_columns:
+      - vin
+      - make
+      - model
+      - year
+    optional_columns:
+      - asking_price
+      - days_on_lot
+      - acquisition_cost
+      - acquisition_source  # trade-in, auction, wholesale
+      - reconditioning_cost
+      - mileage
+      - color
+      - trim
+      - body_style  # SUV, Sedan, Truck, etc.
+
+  sales:
+    description: "Historical sales records"
+    required_columns:
+      - vin
+      - sale_date
+      - sale_price
+    optional_columns:
+      - buyer_zip
+      - buyer_distance_miles
+      - trade_in_vin
+      - trade_in_value
+      - financing_type  # cash, dealer, outside
+      - warranty_sold
+      - warranty_type
+      - gross_profit
+      - days_to_sale
+      - salesperson
+
+  service:
+    description: "Service department records"
+    required_columns:
+      - vin
+      - service_date
+    optional_columns:
+      - service_type  # oil change, repair, recall, etc.
+      - revenue
+      - labor_hours
+      - parts_cost
+      - customer_zip
+      - customer_pay  # vs warranty/internal
+
+# Scoring factors for "perfect sale" calculation
+# Weights should sum to 100
+scoring:
+  perfect_sale:
+    local_buyer:
+      description: "Buyer within 25 miles (higher service potential)"
+      weight: 15
+      calculation: "buyer_distance_miles <= 25"
+
+    trade_in:
+      description: "Trade-in accepted (inventory acquisition + margin)"
+      weight: 20
+      calculation: "trade_in_vin IS NOT NULL"
+
+    dealer_financing:
+      description: "Dealer-arranged financing (finance reserve income)"
+      weight: 25
+      calculation: "financing_type = 'dealer'"
+
+    warranty_sold:
+      description: "Extended warranty purchased (high margin product)"
+      weight: 15
+      calculation: "warranty_sold = true"
+
+    quick_turn:
+      description: "Sold within 30 days of acquisition"
+      weight: 10
+      calculation: "days_to_sale <= 30"
+
+    above_margin:
+      description: "Gross profit above 15% target margin"
+      weight: 15
+      calculation: "gross_profit / sale_price > 0.15"
+
+# Business rules and constraints
+rules:
+  - name: max_mileage
+    description: "Don't stock vehicles over 100,000 miles"
+    condition: "mileage <= 100000"
+    severity: warning
+
+  - name: max_age
+    description: "Avoid vehicles older than 10 years"
+    condition: "year >= strftime('%Y', 'now') - 10"
+    severity: warning
+
+  - name: target_margin
+    description: "Target 15% gross margin on used vehicles"
+    target: 0.15
+
+  - name: max_recon
+    description: "Reconditioning should not exceed 10% of expected sale price"
+    condition: "reconditioning_cost / asking_price <= 0.10"
+    severity: warning
+
+# Key metrics with targets and thresholds
+metrics:
+  days_on_lot:
+    description: "Average days inventory sits on lot"
+    target: 45
+    warning: 60
+    critical: 90
+    lower_is_better: true
+
+  gross_margin:
+    description: "Gross profit as percentage of sale price"
+    target: 0.15
+    warning: 0.10
+    critical: 0.05
+    lower_is_better: false
+
+  inventory_turn:
+    description: "Inventory turns per year"
+    target: 12
+    warning: 8
+    critical: 6
+    lower_is_better: false
+
+  sale_score_avg:
+    description: "Average perfect sale score"
+    target: 70
+    warning: 50
+    critical: 30
+    lower_is_better: false
+
+# Pre-built queries for common questions
+canned_queries:
+  - name: aged_inventory
+    question: "Which vehicles have been on the lot over 60 days?"
+    sql: |
+      SELECT *
+      FROM inventory
+      WHERE days_on_lot > 60
+      ORDER BY days_on_lot DESC
+
+  - name: top_profit_sales
+    question: "What were our most profitable sales last month?"
+    sql: |
+      SELECT *
+      FROM sales
+      WHERE sale_date >= date('now', '-30 days')
+      ORDER BY gross_profit DESC
+      LIMIT 10
+
+  - name: service_opportunities
+    question: "Which sold vehicles haven't returned for service in 90+ days?"
+    sql: |
+      SELECT s.vin, s.sale_date, s.buyer_zip,
+             MAX(sv.service_date) as last_service
+      FROM sales s
+      LEFT JOIN service sv ON s.vin = sv.vin
+      WHERE s.sale_date < date('now', '-90 days')
+      GROUP BY s.vin
+      HAVING last_service IS NULL
+         OR last_service < date('now', '-90 days')
+
+  - name: trade_in_analysis
+    question: "How do trade-in acquisitions compare to auction buys?"
+    sql: |
+      SELECT
+        acquisition_source,
+        COUNT(*) as count,
+        AVG(gross_profit) as avg_profit,
+        AVG(days_to_sale) as avg_days
+      FROM inventory i
+      JOIN sales s ON i.vin = s.vin
+      GROUP BY acquisition_source
+
+  - name: local_vs_distant
+    question: "How do local buyers compare to distant buyers for service revenue?"
+    sql: |
+      SELECT
+        CASE WHEN buyer_distance_miles <= 25 THEN 'Local' ELSE 'Distant' END as buyer_type,
+        COUNT(DISTINCT s.vin) as vehicles_sold,
+        COUNT(sv.vin) as service_visits,
+        SUM(sv.revenue) as total_service_revenue
+      FROM sales s
+      LEFT JOIN service sv ON s.vin = sv.vin
+      GROUP BY buyer_type
+
+# Custom prompts for this vertical
+prompts:
+  system: |
+    You are an AI assistant for an auto dealership. You help analyze
+    inventory, sales, and service data to make strategic business decisions.
+
+    Key metrics to always consider:
+    - Days on lot (target: under 45 days)
+    - Gross margin (target: 15%+)
+    - Customer proximity (local buyers = better service retention)
+    - Trade-in vs auction acquisition
+    - Financing and warranty attachment rates
+
+    When making recommendations, prioritize profitability and inventory turn.
+
+  strategic_analysis: |
+    When analyzing "ideal inventory" or "best vehicles to stock", consider:
+
+    1. Historical sales velocity by vehicle type (make/model/body style)
+    2. Gross margin by category - which vehicles are most profitable?
+    3. Customer demographics - what do local buyers prefer?
+    4. Seasonal trends - SUVs in winter, convertibles in summer?
+    5. Current inventory gaps - what's selling that we don't have?
+    6. Acquisition source performance - trade-ins vs auctions
+    7. Reconditioning ROI - which vehicles need minimal prep?
+
+    Provide specific, actionable recommendations with supporting data.

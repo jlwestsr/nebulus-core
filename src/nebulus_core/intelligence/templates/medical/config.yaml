@@ -1,0 +1,292 @@
+# Medical/Healthcare Vertical Template
+# Configuration for patient care and practice management analysis
+
+name: medical
+display_name: "Medical Practice"
+version: "1.0"
+description: "Analyze patient data, appointments, and practice metrics for healthcare providers"
+
+# Primary key detection hints (checked in order)
+primary_keys:
+  - patient_id
+  - patientid
+  - PatientID
+  - Patient_ID
+  - mrn
+  - MRN
+  - medical_record_number
+  - chart_number
+
+# Expected data sources with required/optional columns
+data_sources:
+  patients:
+    description: "Patient demographics and contact information"
+    required_columns:
+      - patient_id
+      - first_name
+      - last_name
+    optional_columns:
+      - date_of_birth
+      - gender
+      - phone
+      - email
+      - address
+      - city
+      - zip_code
+      - insurance_provider
+      - insurance_id
+      - primary_care_provider
+      - registration_date
+      - last_visit_date
+
+  appointments:
+    description: "Scheduled and completed appointments"
+    required_columns:
+      - appointment_id
+      - patient_id
+      - appointment_date
+    optional_columns:
+      - appointment_time
+      - provider
+      - appointment_type
+      - status  # scheduled, completed, cancelled, no_show
+      - duration_minutes
+      - reason
+      - notes
+      - check_in_time
+      - check_out_time
+
+  visits:
+    description: "Completed patient visits with clinical data"
+    required_columns:
+      - visit_id
+      - patient_id
+      - visit_date
+    optional_columns:
+      - provider
+      - visit_type
+      - chief_complaint
+      - diagnosis_codes
+      - procedure_codes
+      - vitals_recorded
+      - follow_up_scheduled
+      - referral_made
+      - prescriptions_written
+      - visit_duration
+      - billing_amount
+
+  billing:
+    description: "Billing and payment records"
+    required_columns:
+      - billing_id
+      - patient_id
+      - service_date
+      - amount
+    optional_columns:
+      - procedure_code
+      - diagnosis_code
+      - insurance_billed
+      - insurance_paid
+      - patient_responsibility
+      - payment_received
+      - balance
+      - status  # pending, submitted, paid, denied
+
+# Scoring factors for "ideal patient visit"
+scoring:
+  ideal_visit:
+    on_time_arrival:
+      description: "Patient arrived on time or early"
+      weight: 10
+      calculation: "check_in_time <= appointment_time"
+
+    vitals_complete:
+      description: "All vitals recorded during visit"
+      weight: 15
+      calculation: "vitals_recorded = true"
+
+    follow_up_scheduled:
+      description: "Follow-up appointment scheduled if needed"
+      weight: 20
+      calculation: "follow_up_scheduled = true"
+
+    referral_completed:
+      description: "Necessary referrals made"
+      weight: 15
+      calculation: "referral_made = true"
+
+    billing_complete:
+      description: "Visit properly coded and billed"
+      weight: 20
+      calculation: "diagnosis_codes IS NOT NULL"
+
+    documentation_timely:
+      description: "Visit documented within 24 hours"
+      weight: 20
+      calculation: "documentation_complete = true"
+
+  patient_engagement:
+    regular_visits:
+      description: "Patient visits at recommended intervals"
+      weight: 25
+      calculation: "days_since_last_visit <= 180"
+
+    preventive_care:
+      description: "Up to date on preventive screenings"
+      weight: 25
+      calculation: "preventive_care_current = true"
+
+    medication_adherence:
+      description: "Refills on schedule"
+      weight: 25
+      calculation: "medication_adherent = true"
+
+    portal_active:
+      description: "Uses patient portal"
+      weight: 25
+      calculation: "portal_active = true"
+
+# Business rules and constraints
+rules:
+  - name: appointment_lead_time
+    description: "Schedule appointments at least 24 hours in advance"
+    condition: "appointment_date > date('now', '+1 day')"
+    severity: info
+
+  - name: no_show_threshold
+    description: "Flag patients with 3+ no-shows"
+    condition: "no_show_count < 3"
+    severity: warning
+
+  - name: follow_up_required
+    description: "Chronic care patients need follow-up within 90 days"
+    condition: "days_since_visit <= 90"
+    severity: warning
+
+  - name: insurance_verification
+    description: "Verify insurance before appointment"
+    condition: "insurance_verified = true"
+    severity: warning
+
+  - name: documentation_deadline
+    description: "Complete documentation within 72 hours"
+    condition: "documentation_hours <= 72"
+    severity: critical
+
+# Key metrics with targets and thresholds
+metrics:
+  no_show_rate:
+    description: "Percentage of appointments that are no-shows"
+    target: 0.05
+    warning: 0.10
+    critical: 0.15
+    lower_is_better: true
+
+  patient_wait_time:
+    description: "Average minutes from check-in to being seen"
+    target: 15
+    warning: 25
+    critical: 45
+    lower_is_better: true
+
+  days_to_appointment:
+    description: "Average days to next available appointment"
+    target: 7
+    warning: 14
+    critical: 30
+    lower_is_better: true
+
+  collection_rate:
+    description: "Percentage of billed amount collected"
+    target: 0.95
+    warning: 0.85
+    critical: 0.75
+    lower_is_better: false
+
+  patient_satisfaction:
+    description: "Average patient satisfaction score (1-5)"
+    target: 4.5
+    warning: 4.0
+    critical: 3.5
+    lower_is_better: false
+
+# Pre-built queries for common questions
+canned_queries:
+  - name: upcoming_appointments
+    question: "What appointments are scheduled for today?"
+    sql: |
+      SELECT p.first_name, p.last_name, a.appointment_time,
+             a.provider, a.appointment_type
+      FROM appointments a
+      JOIN patients p ON a.patient_id = p.patient_id
+      WHERE a.appointment_date = date('now')
+      ORDER BY a.appointment_time
+
+  - name: no_show_patients
+    question: "Which patients have high no-show rates?"
+    sql: |
+      SELECT p.patient_id, p.first_name, p.last_name,
+             COUNT(CASE WHEN a.status = 'no_show' THEN 1 END) as no_shows,
+             COUNT(*) as total_appointments
+      FROM patients p
+      JOIN appointments a ON p.patient_id = a.patient_id
+      GROUP BY p.patient_id
+      HAVING no_shows >= 2
+      ORDER BY no_shows DESC
+
+  - name: overdue_followups
+    question: "Which patients are overdue for follow-up?"
+    sql: |
+      SELECT p.patient_id, p.first_name, p.last_name,
+             MAX(v.visit_date) as last_visit,
+             julianday('now') - julianday(MAX(v.visit_date)) as days_since
+      FROM patients p
+      JOIN visits v ON p.patient_id = v.patient_id
+      WHERE v.follow_up_scheduled = 1
+      GROUP BY p.patient_id
+      HAVING days_since > 90
+      ORDER BY days_since DESC
+
+  - name: revenue_by_provider
+    question: "What is the revenue by provider this month?"
+    sql: |
+      SELECT v.provider,
+             COUNT(*) as visits,
+             SUM(b.amount) as total_billed,
+             SUM(b.payment_received) as total_collected
+      FROM visits v
+      JOIN billing b ON v.visit_id = b.visit_id
+      WHERE v.visit_date >= date('now', 'start of month')
+      GROUP BY v.provider
+      ORDER BY total_collected DESC
+
+# Custom prompts for this vertical
+prompts:
+  system: |
+    You are an AI assistant for a medical practice. You help analyze
+    patient data, appointments, and practice operations to improve
+    patient care and practice efficiency.
+
+    Key metrics to always consider:
+    - No-show rate (target: under 5%)
+    - Patient wait time (target: under 15 minutes)
+    - Days to next appointment (target: under 7 days)
+    - Collection rate (target: over 95%)
+
+    IMPORTANT: Never reveal specific patient health information.
+    Focus on aggregate statistics and operational insights.
+    Always prioritize patient privacy and HIPAA compliance.
+
+  strategic_analysis: |
+    When analyzing practice performance, consider:
+
+    1. Patient flow and scheduling efficiency
+    2. Provider productivity and utilization
+    3. Revenue cycle and collection rates
+    4. Patient engagement and retention
+    5. No-show patterns and prevention
+    6. Follow-up compliance rates
+    7. Wait times and patient satisfaction
+
+    Provide specific, actionable recommendations with supporting data.
+    Always consider patient care quality alongside operational efficiency.

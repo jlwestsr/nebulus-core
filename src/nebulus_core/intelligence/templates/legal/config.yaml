@@ -1,0 +1,341 @@
+# Legal/Law Firm Vertical Template
+# Configuration for case management and practice analytics
+
+name: legal
+display_name: "Law Firm"
+version: "1.0"
+description: "Analyze cases, clients, billing, and practice metrics for law firms"
+
+# Primary key detection hints (checked in order)
+primary_keys:
+  - case_id
+  - caseid
+  - CaseID
+  - Case_ID
+  - matter_id
+  - matterid
+  - MatterID
+  - Matter_ID
+  - case_number
+  - docket_number
+
+# Expected data sources with required/optional columns
+data_sources:
+  clients:
+    description: "Client information and contact details"
+    required_columns:
+      - client_id
+      - client_name
+    optional_columns:
+      - client_type  # individual, corporation, organization
+      - contact_name
+      - phone
+      - email
+      - address
+      - city
+      - state
+      - zip_code
+      - intake_date
+      - referral_source
+      - billing_rate
+      - retainer_amount
+      - status  # active, inactive, archived
+
+  matters:
+    description: "Cases and matters"
+    required_columns:
+      - matter_id
+      - client_id
+      - matter_name
+    optional_columns:
+      - matter_type  # litigation, transactional, advisory
+      - practice_area  # corporate, family, criminal, real estate, etc.
+      - responsible_attorney
+      - originating_attorney
+      - open_date
+      - close_date
+      - status  # open, closed, pending, on_hold
+      - court
+      - jurisdiction
+      - opposing_counsel
+      - case_value
+      - billing_method  # hourly, contingency, flat_fee, retainer
+
+  time_entries:
+    description: "Billable and non-billable time entries"
+    required_columns:
+      - entry_id
+      - matter_id
+      - timekeeper
+      - date
+      - hours
+    optional_columns:
+      - description
+      - task_code
+      - activity_code
+      - billable
+      - billing_rate
+      - amount
+      - status  # draft, approved, billed, written_off
+
+  billing:
+    description: "Invoices and payments"
+    required_columns:
+      - invoice_id
+      - matter_id
+      - invoice_date
+      - amount
+    optional_columns:
+      - fees
+      - expenses
+      - taxes
+      - total
+      - status  # draft, sent, partial, paid, overdue
+      - due_date
+      - payment_date
+      - payment_amount
+      - balance
+      - aging_days
+
+  expenses:
+    description: "Case expenses and disbursements"
+    required_columns:
+      - expense_id
+      - matter_id
+      - date
+      - amount
+    optional_columns:
+      - expense_type  # filing_fee, deposition, expert, travel, etc.
+      - vendor
+      - description
+      - billable
+      - reimbursable
+      - status  # pending, approved, billed, paid
+
+# Scoring factors for "ideal matter"
+scoring:
+  matter_health:
+    billing_current:
+      description: "Billing is up to date (no unbilled time over 30 days)"
+      weight: 20
+      calculation: "unbilled_days <= 30"
+
+    collections_healthy:
+      description: "AR under 60 days"
+      weight: 20
+      calculation: "ar_days <= 60"
+
+    budget_on_track:
+      description: "Matter is within budget estimate"
+      weight: 15
+      calculation: "total_billed <= budget"
+
+    staffing_appropriate:
+      description: "Right level attorneys assigned"
+      weight: 15
+      calculation: "staffing_appropriate = true"
+
+    client_communication:
+      description: "Regular client updates"
+      weight: 15
+      calculation: "days_since_client_contact <= 14"
+
+    documentation_complete:
+      description: "Matter documents properly organized"
+      weight: 15
+      calculation: "documentation_complete = true"
+
+  timekeeper_productivity:
+    utilization:
+      description: "Billable hours meet target"
+      weight: 30
+      calculation: "billable_hours >= target_hours"
+
+    realization:
+      description: "High realization rate on billed time"
+      weight: 25
+      calculation: "realization_rate >= 0.90"
+
+    collection:
+      description: "High collection rate"
+      weight: 25
+      calculation: "collection_rate >= 0.95"
+
+    timeliness:
+      description: "Time entries submitted promptly"
+      weight: 20
+      calculation: "avg_entry_delay <= 2"
+
+# Business rules and constraints
+rules:
+  - name: time_entry_deadline
+    description: "Time entries must be submitted within 48 hours"
+    condition: "entry_delay_hours <= 48"
+    severity: warning
+
+  - name: billing_frequency
+    description: "Matters should be billed at least monthly"
+    condition: "days_since_invoice <= 31"
+    severity: warning
+
+  - name: trust_account_compliance
+    description: "Retainer must cover estimated work"
+    condition: "retainer_balance >= estimated_fees"
+    severity: critical
+
+  - name: conflict_check
+    description: "All new matters require conflict check"
+    condition: "conflict_check_complete = true"
+    severity: critical
+
+  - name: engagement_letter
+    description: "Engagement letter required before billing"
+    condition: "engagement_letter_signed = true"
+    severity: critical
+
+# Key metrics with targets and thresholds
+metrics:
+  utilization_rate:
+    description: "Percentage of available hours that are billable"
+    target: 0.75
+    warning: 0.65
+    critical: 0.55
+    lower_is_better: false
+
+  realization_rate:
+    description: "Percentage of billed time collected at full rate"
+    target: 0.92
+    warning: 0.85
+    critical: 0.75
+    lower_is_better: false
+
+  collection_rate:
+    description: "Percentage of billed amounts collected"
+    target: 0.95
+    warning: 0.90
+    critical: 0.80
+    lower_is_better: false
+
+  ar_days:
+    description: "Average days receivables outstanding"
+    target: 45
+    warning: 60
+    critical: 90
+    lower_is_better: true
+
+  wip_days:
+    description: "Average days work-in-progress (unbilled)"
+    target: 30
+    warning: 45
+    critical: 60
+    lower_is_better: true
+
+  revenue_per_lawyer:
+    description: "Annual revenue per lawyer"
+    target: 500000
+    warning: 400000
+    critical: 300000
+    lower_is_better: false
+
+# Pre-built queries for common questions
+canned_queries:
+  - name: unbilled_wip
+    question: "What unbilled work-in-progress do we have?"
+    sql: |
+      SELECT m.matter_name, c.client_name,
+             SUM(t.hours) as unbilled_hours,
+             SUM(t.amount) as unbilled_amount,
+             MIN(t.date) as oldest_entry
+      FROM time_entries t
+      JOIN matters m ON t.matter_id = m.matter_id
+      JOIN clients c ON m.client_id = c.client_id
+      WHERE t.status = 'approved' AND t.billable = 1
+      GROUP BY m.matter_id
+      HAVING unbilled_amount > 0
+      ORDER BY unbilled_amount DESC
+
+  - name: aged_receivables
+    question: "What invoices are overdue?"
+    sql: |
+      SELECT c.client_name, m.matter_name,
+             b.invoice_id, b.invoice_date, b.amount, b.balance,
+             julianday('now') - julianday(b.invoice_date) as days_outstanding
+      FROM billing b
+      JOIN matters m ON b.matter_id = m.matter_id
+      JOIN clients c ON m.client_id = c.client_id
+      WHERE b.balance > 0
+        AND b.due_date < date('now')
+      ORDER BY days_outstanding DESC
+
+  - name: timekeeper_hours
+    question: "What are the billable hours by timekeeper this month?"
+    sql: |
+      SELECT timekeeper,
+             SUM(CASE WHEN billable = 1 THEN hours ELSE 0 END) as billable_hours,
+             SUM(CASE WHEN billable = 0 THEN hours ELSE 0 END) as non_billable_hours,
+             SUM(amount) as total_value
+      FROM time_entries
+      WHERE date >= date('now', 'start of month')
+      GROUP BY timekeeper
+      ORDER BY billable_hours DESC
+
+  - name: matter_profitability
+    question: "Which matters are most profitable?"
+    sql: |
+      SELECT m.matter_name, c.client_name,
+             SUM(b.amount) as total_billed,
+             SUM(b.payment_amount) as total_collected,
+             SUM(b.payment_amount) * 1.0 / NULLIF(SUM(b.amount), 0) as collection_rate
+      FROM matters m
+      JOIN clients c ON m.client_id = c.client_id
+      LEFT JOIN billing b ON m.matter_id = b.matter_id
+      WHERE m.close_date IS NOT NULL
+      GROUP BY m.matter_id
+      ORDER BY total_collected DESC
+      LIMIT 20
+
+  - name: practice_area_revenue
+    question: "What is the revenue by practice area?"
+    sql: |
+      SELECT m.practice_area,
+             COUNT(DISTINCT m.matter_id) as matter_count,
+             SUM(b.amount) as total_billed,
+             SUM(b.payment_amount) as total_collected
+      FROM matters m
+      LEFT JOIN billing b ON m.matter_id = b.matter_id
+      WHERE b.invoice_date >= date('now', '-12 months')
+      GROUP BY m.practice_area
+      ORDER BY total_collected DESC
+
+# Custom prompts for this vertical
+prompts:
+  system: |
+    You are an AI assistant for a law firm. You help analyze
+    cases, billing, productivity, and practice operations to improve
+    efficiency and profitability.
+
+    Key metrics to always consider:
+    - Utilization rate (target: 75%+ billable)
+    - Realization rate (target: 92%+)
+    - Collection rate (target: 95%+)
+    - AR days (target: under 45 days)
+    - WIP days (target: under 30 days)
+
+    IMPORTANT: Never reveal specific case details, client names in
+    strategic analysis, or privileged information. Focus on aggregate
+    statistics and operational insights. Always maintain attorney-client
+    privilege considerations.
+
+  strategic_analysis: |
+    When analyzing firm performance, consider:
+
+    1. Revenue and profitability by practice area
+    2. Timekeeper productivity and utilization
+    3. Billing and collection efficiency
+    4. Work-in-progress management
+    5. Client concentration and diversification
+    6. Matter staffing and leverage
+    7. Realization trends by matter type
+
+    Provide specific, actionable recommendations with supporting data.
+    Consider both short-term revenue and long-term client relationships.
