@@ -19,8 +19,10 @@ src/nebulus_core/
 ├── llm/              # OpenAI-compatible HTTP client
 ├── vector/           # ChromaDB client + episodic memory layer
 ├── memory/           # Models, graph store, consolidator
-├── intelligence/     # (Phase 3 — not yet populated)
-└── testing/          # Shared test utilities
+├── intelligence/     # Data ingestion, analysis, knowledge management
+│   ├── core/         # 13 engine modules (classifier, orchestrator, etc.)
+│   └── templates/    # Vertical templates (dealership, medical, legal)
+└── testing/          # Shared test fixtures and factories
 ```
 
 ### Platform Adapter Protocol
@@ -114,14 +116,19 @@ The LTM system uses two parallel stores:
 - PrimeAdapter created in nebulus-prime
 - Memory CLI commands wired to real implementations
 
-### Phase 3: Intelligence — NOT STARTED
+### Phase 3: Intelligence — COMPLETE
 
-- Extract Edge's `intelligence/` into `nebulus_core.intelligence`
-- Generalize Edge-specific assumptions
-- Bundle domain templates (dealership, medical, legal)
+- 13 core modules extracted from Edge into `nebulus_core.intelligence.core`
+- All `httpx` async Brain calls replaced with sync `LLMClient.chat()`
+- Direct `chromadb.PersistentClient` replaced with `VectorClient` injection
+- 3 domain templates (dealership, medical, legal) bundled as package data via `importlib.resources`
+- All modules use constructor dependency injection (db_path, llm, vector_client)
+- 280 intelligence tests + 39 pre-existing = 319 total tests
 
-### Phase 4: Cleanup — NOT STARTED
+### Phase 4: Cleanup — IN PROGRESS
 
-- Replace all hardcoded inference calls with LLMClient
-- Remove duplicated code across repos
+- Shared test fixtures and factories in `nebulus_core.testing`
+- Replace duplicated code in nebulus-prime with nebulus-core imports
+- Replace duplicated code in nebulus-edge with nebulus-core imports
+- Create EdgeAdapter
 - Tag v0.1.0
