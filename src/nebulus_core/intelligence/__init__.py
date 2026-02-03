@@ -1,1 +1,1 @@
-"""Data intelligence platform — ingestion, PII, knowledge, search."""
+"""Intelligence layer — data ingestion, analysis, and knowledge management."""
