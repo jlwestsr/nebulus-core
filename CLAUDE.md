@@ -74,7 +74,8 @@ docs/
 
 ## Git Workflow
 
-- **Work on `main`** — this repo uses `main` as the primary branch (not `develop`)
+- **NEVER commit directly to `main`.** All work happens on feature branches.
+- **Branch → develop → main**: Create a `feat/`/`fix/`/`docs/`/`chore/` branch from `develop`, do all work there, merge into `develop` when complete. `main` is for releases only.
 - **Conventional commits**: `feat:`, `fix:`, `docs:`, `chore:` prefixes
 - `git push origin` requires explicit user approval — always ask first
 

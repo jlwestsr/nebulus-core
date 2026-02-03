@@ -69,6 +69,13 @@ The LTM system uses two parallel stores:
 - CLI commands use lazy imports inside the command functions to avoid pulling in
   ChromaDB/NetworkX at CLI startup time.
 
+### Git Branching (Critical)
+
+- **NEVER commit directly to `main`.** This was a mistake in early phases.
+- All work goes on feature branches (`feat/`, `fix/`, `docs/`, `chore/`).
+- Branches merge into `develop`. `main` is for releases only.
+- Always create the branch before starting work, not after.
+
 ## 2. Recurring Pitfalls
 
 ### Dependency Management
