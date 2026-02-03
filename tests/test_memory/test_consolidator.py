@@ -1,7 +1,6 @@
 """Tests for the memory consolidator."""
 
 import json
-from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
@@ -79,14 +78,10 @@ class TestConsolidator:
         result = c.consolidate()
         assert "No" in result or "0" in result
 
-    def test_consolidate_llm_returns_invalid_json(
-        self, mock_episodic, graph
-    ):
+    def test_consolidate_llm_returns_invalid_json(self, mock_episodic, graph):
         llm = MagicMock()
         llm.chat.return_value = "I cannot extract entities from this."
-        c = Consolidator(
-            episodic=mock_episodic, graph=graph, llm=llm, model="m"
-        )
+        c = Consolidator(episodic=mock_episodic, graph=graph, llm=llm, model="m")
         result = c.consolidate()
         # Should not crash, just skip
         assert result is not None

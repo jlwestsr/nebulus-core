@@ -1,7 +1,5 @@
 """Tests for the knowledge graph store."""
 
-from pathlib import Path
-
 import pytest
 
 from nebulus_core.memory.graph_store import GraphStore
@@ -35,16 +33,12 @@ class TestGraphStore:
     def test_add_relation(self, graph):
         graph.add_entity(Entity(id="a", type="Server"))
         graph.add_entity(Entity(id="b", type="Database"))
-        graph.add_relation(
-            Relation(source="a", target="b", relation="CONNECTS_TO")
-        )
+        graph.add_relation(Relation(source="a", target="b", relation="CONNECTS_TO"))
         stats = graph.get_stats()
         assert stats.edge_count == 1
 
     def test_add_relation_auto_creates_nodes(self, graph):
-        graph.add_relation(
-            Relation(source="x", target="y", relation="LINKS")
-        )
+        graph.add_relation(Relation(source="x", target="y", relation="LINKS"))
         stats = graph.get_stats()
         assert stats.node_count == 2
         assert stats.edge_count == 1
@@ -52,9 +46,7 @@ class TestGraphStore:
     def test_get_neighbors(self, graph):
         graph.add_entity(Entity(id="a", type="T"))
         graph.add_entity(Entity(id="b", type="T"))
-        graph.add_relation(
-            Relation(source="a", target="b", relation="REL")
-        )
+        graph.add_relation(Relation(source="a", target="b", relation="REL"))
         neighbors = graph.get_neighbors("a")
         assert len(neighbors) == 1
         assert neighbors[0] == ("REL", "b")

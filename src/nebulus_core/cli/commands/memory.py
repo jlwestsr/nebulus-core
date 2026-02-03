@@ -41,9 +41,7 @@ def status(ctx: click.Context) -> None:
 
         vec = VectorClient(settings=adapter.chroma_settings)
         collections = vec.list_collections()
-        console.print(
-            f"[cyan]Vector Store:[/cyan] {len(collections)} collections"
-        )
+        console.print(f"[cyan]Vector Store:[/cyan] {len(collections)} collections")
         for col in collections:
             console.print(f"  - {col}")
     except Exception as e:

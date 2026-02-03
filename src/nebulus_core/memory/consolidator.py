@@ -19,7 +19,10 @@ Analyze the following text and extract key entities and relationships.
 Return ONLY a JSON object with this structure:
 {{
     "entities": [{{"id": "EntityName", "type": "EntityType"}}],
-    "relations": [{{"source": "EntityName", "target": "TargetEntity", "relation": "RELATION_TYPE"}}]
+    "relations": [
+        {{"source": "EntityName", "target": "TargetEntity",
+          "relation": "RELATION_TYPE"}}
+    ]
 }}
 
 Text: "{text}"

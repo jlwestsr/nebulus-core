@@ -1,6 +1,6 @@
 """Tests for the episodic memory layer."""
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -67,9 +67,7 @@ class TestEpisodicMemory:
 
     def test_get_unarchived(self, episodic, mock_collection):
         items = episodic.get_unarchived(n_results=10)
-        mock_collection.get.assert_called_once_with(
-            where={"archived": False}, limit=10
-        )
+        mock_collection.get.assert_called_once_with(where={"archived": False}, limit=10)
         assert len(items) == 2
         assert items[0].id == "id1"
         assert items[0].content == "content1"

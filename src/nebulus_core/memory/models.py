@@ -16,9 +16,7 @@ class Entity(BaseModel):
     id: str = Field(
         ..., description="Unique identifier for the entity (e.g., 'Production Server')"
     )
-    type: str = Field(
-        ..., description="Type of the entity (e.g., 'Server', 'Person')"
-    )
+    type: str = Field(..., description="Type of the entity (e.g., 'Server', 'Person')")
     properties: dict[str, str] = Field(
         default_factory=dict, description="Additional metadata"
     )
@@ -42,9 +40,7 @@ class MemoryItem(BaseModel):
     content: str = Field(..., description="The raw text content")
     timestamp: float = Field(default_factory=time.time)
     metadata: dict[str, str] = Field(default_factory=dict)
-    archived: bool = Field(
-        False, description="Whether this item has been consolidated"
-    )
+    archived: bool = Field(False, description="Whether this item has been consolidated")
 
 
 class GraphStats(BaseModel):
