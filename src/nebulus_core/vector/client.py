@@ -27,16 +27,24 @@ class VectorClient:
                 port=settings.get("port", 8001),
             )
 
-    def get_or_create_collection(self, name: str) -> chromadb.Collection:
+    def get_or_create_collection(
+        self,
+        name: str,
+        metadata: dict | None = None,
+    ) -> chromadb.Collection:
         """Get an existing collection or create a new one.
 
         Args:
             name: Collection name.
+            metadata: Optional collection metadata (e.g. HNSW settings).
 
         Returns:
             ChromaDB Collection instance.
         """
-        return self.client.get_or_create_collection(name=name)
+        kwargs: dict = {"name": name}
+        if metadata is not None:
+            kwargs["metadata"] = metadata
+        return self.client.get_or_create_collection(**kwargs)
 
     def list_collections(self) -> list[str]:
         """List all collection names.
