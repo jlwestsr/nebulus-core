@@ -29,38 +29,44 @@ pip install -e ../nebulus-core
 
 ## Git Tracking & Branching
 
-- **Work directly on `main`** for this repo (nebulus-core uses `main` as the primary branch, not `develop`).
+- **NEVER commit directly to `main`.** All work happens on feature branches.
+- **Branch workflow:** Create a branch with `feat/`, `fix/`, `docs/`, `chore/` prefix → do all work there → merge into `develop` when complete.
+- **`develop`** is the integration branch. `main` is for releases only.
 - **Push Authorization**: All pushes to `origin` require explicit, just-in-time user approval.
-- For larger features, create local branches with `feat/`, `fix/`, `docs/`, `chore/` prefixes and merge into `main` before pushing.
 
 ## Workflows by Commit Type
 
 ### Feature (`feat`)
 
-1. Create an implementation plan in `docs/plans/` for non-trivial features.
-2. Implement changes with tests (TDD preferred).
-3. Run `pytest` to verify.
-4. Commit to `main` (or merge feature branch into `main`).
-5. Ask for permission, then `git push origin main`.
+1. Create branch: `git checkout -b feat/<name> develop`
+2. Create an implementation plan in `docs/plans/` for non-trivial features.
+3. Implement changes with tests (TDD preferred).
+4. Run `pytest` to verify.
+5. Merge to develop: `git checkout develop && git merge feat/<name>`
+6. Delete branch: `git branch -d feat/<name>`
+7. Ask for permission, then `git push origin develop`.
 
 ### Bug Fix (`fix`)
 
-1. Reproduce the bug with a failing test.
-2. Implement fix.
-3. Verify the failing test now passes AND no regressions.
-4. Commit and push (with approval).
+1. Create branch: `git checkout -b fix/<name> develop`
+2. Reproduce the bug with a failing test.
+3. Implement fix.
+4. Verify the failing test now passes AND no regressions.
+5. Merge to develop and push (with approval).
 
 ### Documentation (`docs`)
 
-1. Update docs, README, or plan files.
-2. Check rendering and links.
-3. Commit and push (with approval).
+1. Create branch: `git checkout -b docs/<name> develop`
+2. Update docs, README, or plan files.
+3. Check rendering and links.
+4. Merge to develop and push (with approval).
 
 ### Maintenance (`chore`)
 
-1. Update configs, dependencies, or tooling.
-2. Run `pytest` to verify no regressions.
-3. Commit and push (with approval).
+1. Create branch: `git checkout -b chore/<name> develop`
+2. Update configs, dependencies, or tooling.
+3. Run `pytest` to verify no regressions.
+4. Merge to develop and push (with approval).
 
 ## Verification
 
