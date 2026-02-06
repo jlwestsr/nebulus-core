@@ -139,3 +139,16 @@ The LTM system uses two parallel stores:
 - Replace duplicated code in nebulus-edge with nebulus-core imports
 - Create EdgeAdapter
 - Tag v0.1.0
+
+## 4. Documentation & Wiki
+
+*   **GitHub wiki**: Cloned at `../nebulus-core.wiki/` (sibling directory). Uses SSH remote (`git@github.com:jlwestsr/nebulus-core.wiki.git`), `master` branch.
+*   **Wiki pages** (8): Home, Architecture-Overview, Platform-Adapter-Protocol, Intelligence-Layer, Audit-Logger, Installation-Guide, LLM-Client, Vector-Client.
+*   **Wiki initialization**: GitHub wikis must be initialized via the web UI first (create one placeholder page), then local content can be force-pushed.
+*   **Ecosystem wikis**: All four project wikis are live:
+    - `nebulus-core.wiki` — 8 pages (this project)
+    - `nebulus-edge.wiki` — 5 pages
+    - `nebulus-gantry.wiki` — 9 pages
+    - `nebulus-prime.wiki` — 10 pages
+*   **Cross-project doc sync**: When a feature ships, update the corresponding wiki. Wiki repos are independent git repos — commit and push separately from the main repo.
+*   **Audit-Logger wiki page**: Documents the full AuditLogger API including common pitfalls (Path not str, AuditEvent not kwargs, timestamp required, get_events not query, audit_log not audit_events). Keep in sync with actual API if it changes.
