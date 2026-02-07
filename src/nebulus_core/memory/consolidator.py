@@ -110,7 +110,11 @@ class Consolidator:
             start = content.find("{")
             end = content.rfind("}") + 1
             if start != -1 and end > start:
-                return json.loads(content[start:end])
+                try:
+                    return json.loads(content[start:end])
+                except json.JSONDecodeError:
+                    logger.warning("Invalid JSON in LLM response.")
+                    return {"entities": [], "relations": []}
             else:
                 logger.warning("Could not find JSON in LLM response.")
                 return {"entities": [], "relations": []}
