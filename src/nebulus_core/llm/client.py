@@ -18,7 +18,18 @@ class LLMClient:
     """
 
     def __init__(self, base_url: str, timeout: float = 120.0) -> None:
-        self.base_url = base_url.rstrip("/")
+        if not base_url or not base_url.strip():
+            raise ValueError(
+                "LLMClient requires a non-empty base_url. "
+                "The platform adapter should provide this via llm_base_url."
+            )
+        stripped = base_url.strip()
+        if not stripped.startswith(("http://", "https://")):
+            raise ValueError(
+                f"LLMClient base_url must start with http:// or https://, "
+                f"got: '{stripped}'"
+            )
+        self.base_url = stripped.rstrip("/")
         self.client = httpx.Client(timeout=timeout)
 
     def chat(

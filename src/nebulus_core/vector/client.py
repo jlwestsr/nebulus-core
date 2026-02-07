@@ -18,13 +18,28 @@ class VectorClient:
     def __init__(self, settings: dict) -> None:
         mode = settings.get("mode", "http")
         if mode == "embedded":
+            if "path" not in settings:
+                raise ValueError(
+                    "Embedded mode requires 'path' in settings. "
+                    "Example: {'mode': 'embedded', 'path': '/data/vectors'}"
+                )
             self.client = chromadb.PersistentClient(
                 path=settings["path"],
             )
-        else:
+        elif mode == "http":
+            if "host" not in settings or "port" not in settings:
+                raise ValueError(
+                    "HTTP mode requires 'host' and 'port' in settings. "
+                    "Example: {'mode': 'http', 'host': 'localhost', 'port': 8001}"
+                )
             self.client = chromadb.HttpClient(
-                host=settings.get("host", "localhost"),
-                port=settings.get("port", 8001),
+                host=settings["host"],
+                port=settings["port"],
+            )
+        else:
+            raise ValueError(
+                f"Unknown VectorClient mode: '{mode}'. "
+                "Supported modes: 'http', 'embedded'."
             )
 
     def get_or_create_collection(
