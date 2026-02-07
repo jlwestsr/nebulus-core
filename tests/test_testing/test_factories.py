@@ -5,38 +5,44 @@ from nebulus_core.testing.factories import make_entity, make_memory_item, make_r
 
 
 class TestFactories:
-    def test_make_entity_defaults(self):
+    def test_make_entity_defaults(self) -> None:
+        """make_entity returns a valid Entity with sensible defaults."""
         e = make_entity()
         assert isinstance(e, Entity)
         assert e.id
         assert e.type
 
-    def test_make_entity_overrides(self):
+    def test_make_entity_overrides(self) -> None:
+        """make_entity applies provided overrides."""
         e = make_entity(id="srv-1", type="Server")
         assert e.id == "srv-1"
         assert e.type == "Server"
 
-    def test_make_relation_defaults(self):
+    def test_make_relation_defaults(self) -> None:
+        """make_relation returns a valid Relation with sensible defaults."""
         r = make_relation()
         assert isinstance(r, Relation)
         assert r.source
         assert r.target
         assert r.relation
 
-    def test_make_relation_overrides(self):
+    def test_make_relation_overrides(self) -> None:
+        """make_relation applies provided overrides."""
         r = make_relation(source="a", target="b", relation="LINKS")
         assert r.source == "a"
         assert r.target == "b"
         assert r.relation == "LINKS"
 
-    def test_make_memory_item_defaults(self):
+    def test_make_memory_item_defaults(self) -> None:
+        """make_memory_item returns a valid MemoryItem with sensible defaults."""
         m = make_memory_item()
         assert isinstance(m, MemoryItem)
         assert m.content
         assert m.id
         assert m.archived is False
 
-    def test_make_memory_item_overrides(self):
+    def test_make_memory_item_overrides(self) -> None:
+        """make_memory_item applies provided overrides."""
         m = make_memory_item(content="custom", archived=True)
         assert m.content == "custom"
         assert m.archived is True
