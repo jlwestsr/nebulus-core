@@ -100,6 +100,8 @@ The LTM system uses two parallel stores:
 
 ### Cleanup Track Learnings (2026-02-07)
 
+Track `cleanup_20260207` completed 3 phases in a single session. Key learnings:
+
 - **ChromaDB metadata mutation**: `EpisodicMemory.get_unarchived()` must copy the
   metadata dict before calling `.pop()` to avoid mutating ChromaDB's internal state.
   Pattern: `dict(results["metadatas"][i])` before extracting fields.
@@ -113,6 +115,21 @@ The LTM system uses two parallel stores:
 - **Silent exception handlers**: Bare `except Exception:` blocks that return defaults
   without logging make debugging impossible. Always add `logger.error(...)` with
   context about which operation failed and the exception value.
+- **Rich Table introspection in tests**: `Table.rows` objects don't stringify cell
+  content. To assert on cell values, inspect `table.columns[i]._cells` instead.
+- **Test consistency standard**: All test methods must have `-> None` return type
+  hints and Google-style docstrings. This is now enforced across all 372 tests.
+
+### Cleanup Track Results (2026-02-07)
+
+| Phase | Focus | Changes |
+|-------|-------|---------|
+| 1 | Core decoupling | Validation, graceful degradation, missing-adapter errors |
+| 2 | Test coverage | 17 CLI tests, episodic.py mutation fix, consolidator.py JSONDecodeError fix |
+| 3 | Consistency & observability | 40 test type hints, 4 vector_engine.py loggers, AI_INSIGHTS update |
+
+Final metrics: 372 tests, 0 test methods missing `-> None`, 0 silent exception
+handlers, 0 known source defects, `black` + `flake8` clean.
 
 ### Cross-Repo Coordination
 
