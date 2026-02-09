@@ -98,6 +98,22 @@ The LTM system uses two parallel stores:
   When adding new properties to `PlatformAdapter`, update `MockAdapter` too or
   protocol conformance tests will fail.
 
+### Cleanup Track Learnings (2026-02-07)
+
+- **ChromaDB metadata mutation**: `EpisodicMemory.get_unarchived()` must copy the
+  metadata dict before calling `.pop()` to avoid mutating ChromaDB's internal state.
+  Pattern: `dict(results["metadatas"][i])` before extracting fields.
+- **LLM JSON extraction resilience**: `Consolidator._extract_facts()` extracts JSON
+  from LLM responses using `find("{")` / `rfind("}")` and must handle
+  `json.JSONDecodeError` for malformed JSON within matching braces.
+- **CLI test pattern**: All CLI commands tested via `click.testing.CliRunner` with
+  mock adapter injected as `obj={"adapter": adapter, "console": console}`. Lazy
+  imports inside command functions require patching at the source module path, not
+  the CLI module namespace.
+- **Silent exception handlers**: Bare `except Exception:` blocks that return defaults
+  without logging make debugging impossible. Always add `logger.error(...)` with
+  context about which operation failed and the exception value.
+
 ### Cross-Repo Coordination
 
 - **Protocol changes require adapter updates**: Adding a property to
@@ -135,6 +151,8 @@ The LTM system uses two parallel stores:
 ### Phase 4: Cleanup — IN PROGRESS
 
 - Shared test fixtures and factories in `nebulus_core.testing`
+- Cleanup track `cleanup_20260207`: Phase 1 (core decoupling), Phase 2 (CLI tests,
+  defect fixes), Phase 3 (test consistency, silent failure logging)
 - Replace duplicated code in nebulus-prime with nebulus-core imports
 - Replace duplicated code in nebulus-edge with nebulus-core imports
 - Create EdgeAdapter

@@ -5,9 +5,12 @@ backed by the shared VectorClient.
 """
 
 import json
+import logging
 from dataclasses import dataclass
 
 from nebulus_core.vector.client import VectorClient
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -205,7 +208,8 @@ class VectorEngine:
                 return []
 
             embedding = result["embeddings"][0]
-        except Exception:
+        except Exception as e:
+            logger.error("Failed to retrieve embedding for %s: %s", record_id, e)
             return []
 
         results = collection.query(
@@ -257,7 +261,8 @@ class VectorEngine:
                 ids=positive_ids,
                 include=["metadatas"],
             )
-        except Exception:
+        except Exception as e:
+            logger.error("Failed to retrieve metadata for pattern analysis: %s", e)
             return PatternResult(
                 common_fields={},
                 frequent_values={},
@@ -331,7 +336,8 @@ class VectorEngine:
         try:
             self.client.delete_collection(name=table_name)
             return True
-        except Exception:
+        except Exception as e:
+            logger.error("Failed to delete collection %s: %s", table_name, e)
             return False
 
     def list_collections(self) -> list[str]:
@@ -358,5 +364,6 @@ class VectorEngine:
                 "count": collection.count(),
                 "metadata": collection.metadata,
             }
-        except Exception:
+        except Exception as e:
+            logger.error("Failed to get collection info for %s: %s", table_name, e)
             return {"name": table_name, "count": 0, "metadata": {}}
