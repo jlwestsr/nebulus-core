@@ -87,7 +87,9 @@ class EpisodicMemory:
             items: list[MemoryItem] = []
             if results["ids"]:
                 for i, _id in enumerate(results["ids"]):
-                    raw_meta = results["metadatas"][i] if results["metadatas"] else {}
+                    raw_meta = (
+                        dict(results["metadatas"][i]) if results["metadatas"] else {}
+                    )
                     # Extract known fields from ChromaDB metadata
                     timestamp = raw_meta.pop("timestamp", None)
                     archived = raw_meta.pop("archived", False)

@@ -162,14 +162,16 @@ class TestPIISummary:
 class TestSelectivePIIDetection:
     """Tests for selective PII type detection."""
 
-    def test_detect_only_ssn(self):
+    def test_detect_only_ssn(self) -> None:
+        """Selective detection finds SSN but ignores email."""
         detector = PIIDetector(detect_types=[PIIType.SSN])
         records = [{"ssn": "123-45-6789", "email": "user@example.com"}]
         report = detector.scan_records(records)
         assert PIIType.SSN in report.pii_by_type
         assert PIIType.EMAIL not in report.pii_by_type
 
-    def test_detect_only_email(self):
+    def test_detect_only_email(self) -> None:
+        """Selective detection finds email but ignores SSN."""
         detector = PIIDetector(detect_types=[PIIType.EMAIL])
         records = [{"ssn": "123-45-6789", "email": "user@example.com"}]
         report = detector.scan_records(records)

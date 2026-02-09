@@ -98,6 +98,39 @@ The LTM system uses two parallel stores:
   When adding new properties to `PlatformAdapter`, update `MockAdapter` too or
   protocol conformance tests will fail.
 
+### Cleanup Track Learnings (2026-02-07)
+
+Track `cleanup_20260207` completed 3 phases in a single session. Key learnings:
+
+- **ChromaDB metadata mutation**: `EpisodicMemory.get_unarchived()` must copy the
+  metadata dict before calling `.pop()` to avoid mutating ChromaDB's internal state.
+  Pattern: `dict(results["metadatas"][i])` before extracting fields.
+- **LLM JSON extraction resilience**: `Consolidator._extract_facts()` extracts JSON
+  from LLM responses using `find("{")` / `rfind("}")` and must handle
+  `json.JSONDecodeError` for malformed JSON within matching braces.
+- **CLI test pattern**: All CLI commands tested via `click.testing.CliRunner` with
+  mock adapter injected as `obj={"adapter": adapter, "console": console}`. Lazy
+  imports inside command functions require patching at the source module path, not
+  the CLI module namespace.
+- **Silent exception handlers**: Bare `except Exception:` blocks that return defaults
+  without logging make debugging impossible. Always add `logger.error(...)` with
+  context about which operation failed and the exception value.
+- **Rich Table introspection in tests**: `Table.rows` objects don't stringify cell
+  content. To assert on cell values, inspect `table.columns[i]._cells` instead.
+- **Test consistency standard**: All test methods must have `-> None` return type
+  hints and Google-style docstrings. This is now enforced across all 372 tests.
+
+### Cleanup Track Results (2026-02-07)
+
+| Phase | Focus | Changes |
+|-------|-------|---------|
+| 1 | Core decoupling | Validation, graceful degradation, missing-adapter errors |
+| 2 | Test coverage | 17 CLI tests, episodic.py mutation fix, consolidator.py JSONDecodeError fix |
+| 3 | Consistency & observability | 40 test type hints, 4 vector_engine.py loggers, AI_INSIGHTS update |
+
+Final metrics: 372 tests, 0 test methods missing `-> None`, 0 silent exception
+handlers, 0 known source defects, `black` + `flake8` clean.
+
 ### Cross-Repo Coordination
 
 - **Protocol changes require adapter updates**: Adding a property to
@@ -135,7 +168,22 @@ The LTM system uses two parallel stores:
 ### Phase 4: Cleanup — IN PROGRESS
 
 - Shared test fixtures and factories in `nebulus_core.testing`
+- Cleanup track `cleanup_20260207`: Phase 1 (core decoupling), Phase 2 (CLI tests,
+  defect fixes), Phase 3 (test consistency, silent failure logging)
 - Replace duplicated code in nebulus-prime with nebulus-core imports
 - Replace duplicated code in nebulus-edge with nebulus-core imports
 - Create EdgeAdapter
 - Tag v0.1.0
+
+## 4. Documentation & Wiki
+
+*   **GitHub wiki**: Cloned at `../nebulus-core.wiki/` (sibling directory). Uses SSH remote (`git@github.com:jlwestsr/nebulus-core.wiki.git`), `master` branch.
+*   **Wiki pages** (8): Home, Architecture-Overview, Platform-Adapter-Protocol, Intelligence-Layer, Audit-Logger, Installation-Guide, LLM-Client, Vector-Client.
+*   **Wiki initialization**: GitHub wikis must be initialized via the web UI first (create one placeholder page), then local content can be force-pushed.
+*   **Ecosystem wikis**: All four project wikis are live:
+    - `nebulus-core.wiki` — 8 pages (this project)
+    - `nebulus-edge.wiki` — 5 pages
+    - `nebulus-gantry.wiki` — 9 pages
+    - `nebulus-prime.wiki` — 10 pages
+*   **Cross-project doc sync**: When a feature ships, update the corresponding wiki. Wiki repos are independent git repos — commit and push separately from the main repo.
+*   **Audit-Logger wiki page**: Documents the full AuditLogger API including common pitfalls (Path not str, AuditEvent not kwargs, timestamp required, get_events not query, audit_log not audit_events). Keep in sync with actual API if it changes.

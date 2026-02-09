@@ -1,0 +1,68 @@
+{
+  "project": "nebulus-core",
+  "description": "Shared Python library for Nebulus AI ecosystem",
+  "mcpServers": {
+    "pyright-lsp": {
+      "disabled": false,
+      "priority": "high",
+      "reason": "Type checking for library code"
+    },
+    "serena": {
+      "disabled": false,
+      "priority": "high",
+      "reason": "Semantic code navigation for library structure"
+    },
+    "context7": {
+      "disabled": false,
+      "priority": "medium",
+      "reason": "Docs for dependencies (pydantic, chromadb, sqlalchemy)"
+    },
+    "superpowers": {
+      "disabled": false,
+      "priority": "high",
+      "reason": "TDD and debugging workflows"
+    },
+    "pr-review-toolkit": {
+      "disabled": false,
+      "priority": "medium",
+      "reason": "Code quality checks"
+    },
+    "commit-commands": {
+      "disabled": false,
+      "priority": "medium",
+      "reason": "Git workflow automation"
+    },
+    "feature-dev": {
+      "disabled": false,
+      "priority": "medium",
+      "reason": "Feature development workflows"
+    },
+    "typescript-lsp": {
+      "disabled": true,
+      "reason": "No TypeScript in library"
+    },
+    "github": {
+      "disabled": true,
+      "reason": "No GitHub integration needed for library"
+    },
+    "playwright": {
+      "disabled": true,
+      "reason": "No UI testing"
+    },
+    "supabase": {
+      "disabled": true,
+      "reason": "Not using Supabase"
+    },
+    "ralph-loop": {
+      "disabled": true,
+      "reason": "No automation loops"
+    }
+  },
+  "projectSettings": {
+    "language": "Python",
+    "version": "3.10+",
+    "type": "library",
+    "lsp": "pyright",
+    "testFramework": "pytest"
+  }
+}

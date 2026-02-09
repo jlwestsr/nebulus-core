@@ -8,6 +8,7 @@ import pytest
 
 from nebulus_core.platform.base import PlatformAdapter, ServiceInfo
 from nebulus_core.platform.detection import detect_platform
+from nebulus_core.platform.registry import adapter_available, load_adapter
 
 
 class TestPlatformDetection:
@@ -89,3 +90,56 @@ def test_adapter_has_default_model(mock_adapter):
 def test_adapter_has_data_dir(mock_adapter):
     """Adapter must expose a data directory path."""
     assert isinstance(mock_adapter.data_dir, Path)
+
+
+class TestAdapterRegistry:
+    """Tests for adapter loading via entry points."""
+
+    def test_load_adapter_raises_when_no_adapter_found(self) -> None:
+        """load_adapter should raise RuntimeError with helpful message."""
+        with patch("nebulus_core.platform.registry.entry_points", return_value=[]):
+            with pytest.raises(RuntimeError, match="No adapter found"):
+                load_adapter("nonexistent")
+
+    def test_load_adapter_error_includes_available_adapters(self) -> None:
+        """Error message should list available adapters for debugging."""
+        mock_ep = type("EP", (), {"name": "other_adapter"})()
+        with patch(
+            "nebulus_core.platform.registry.entry_points",
+            return_value=[mock_ep],
+        ):
+            with pytest.raises(RuntimeError, match="other_adapter"):
+                load_adapter("prime")
+
+    def test_load_adapter_raises_on_import_failure(self) -> None:
+        """load_adapter should wrap import errors with clear message."""
+        mock_ep = type(
+            "EP",
+            (),
+            {
+                "name": "prime",
+                "load": staticmethod(
+                    lambda: (_ for _ in ()).throw(ImportError("no module"))
+                ),
+            },
+        )()
+        with patch(
+            "nebulus_core.platform.registry.entry_points",
+            return_value=[mock_ep],
+        ):
+            with pytest.raises(RuntimeError, match="failed to import"):
+                load_adapter("prime")
+
+    def test_adapter_available_returns_false_when_missing(self) -> None:
+        """adapter_available should return False when no entry point."""
+        with patch("nebulus_core.platform.registry.entry_points", return_value=[]):
+            assert adapter_available("prime") is False
+
+    def test_adapter_available_returns_true_when_present(self) -> None:
+        """adapter_available should return True when entry point exists."""
+        mock_ep = type("EP", (), {"name": "prime"})()
+        with patch(
+            "nebulus_core.platform.registry.entry_points",
+            return_value=[mock_ep],
+        ):
+            assert adapter_available("prime") is True
