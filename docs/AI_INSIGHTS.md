@@ -165,15 +165,33 @@ handlers, 0 known source defects, `black` + `flake8` clean.
 - All modules use constructor dependency injection (db_path, llm, vector_client)
 - 280 intelligence tests + 39 pre-existing = 319 total tests
 
-### Phase 4: Cleanup — IN PROGRESS
+### Phase 4: Cleanup — COMPLETE
 
 - Shared test fixtures and factories in `nebulus_core.testing`
 - Cleanup track `cleanup_20260207`: Phase 1 (core decoupling), Phase 2 (CLI tests,
   defect fixes), Phase 3 (test consistency, silent failure logging)
+- Documentation foundation: README.md and CONTEXT.md rewritten for v0.1.0
+- Tagged `v0.1.0` on `main` at merge commit `4fc3f76` (2026-02-09)
+
+### v0.1.0 Release Notes (2026-02-09)
+
+Release includes all 4 migration phases complete:
+- Platform Adapter protocol with auto-detection and entry point discovery
+- CLI framework (`nebulus` command) with service, model, and memory management
+- LLM client (OpenAI-compatible, httpx)
+- ChromaDB dual-mode vector storage (HTTP + embedded)
+- Knowledge graph (NetworkX + JSON persistence)
+- LLM-powered memory consolidation (episodic → graph)
+- Intelligence layer — 13 engine modules + 3 domain templates
+- Shared testing infrastructure (fixtures + factories)
+- 372 passing tests, `black` + `flake8` clean
+
+### Post-v0.1.0 Remaining Work
+
 - Replace duplicated code in nebulus-prime with nebulus-core imports
 - Replace duplicated code in nebulus-edge with nebulus-core imports
 - Create EdgeAdapter
-- Tag v0.1.0
+- MCP server migration — extract MCP from Prime into `nebulus_core.mcp`
 
 ## 4. Documentation & Wiki
 
@@ -187,3 +205,19 @@ handlers, 0 known source defects, `black` + `flake8` clean.
     - `nebulus-prime.wiki` — 10 pages
 *   **Cross-project doc sync**: When a feature ships, update the corresponding wiki. Wiki repos are independent git repos — commit and push separately from the main repo.
 *   **Audit-Logger wiki page**: Documents the full AuditLogger API including common pitfalls (Path not str, AuditEvent not kwargs, timestamp required, get_events not query, audit_log not audit_events). Keep in sync with actual API if it changes.
+
+## 5. Documentation Learnings (2026-02-09)
+
+- **README.md scope**: For a shared library, document modules with usage examples and
+  API surface tables — not just a project structure tree. The PlatformAdapter protocol
+  table (6 properties + 5 methods) is the most referenced section by downstream devs.
+- **CONTEXT.md audience**: Written for AI agents, not humans. Include invariants,
+  data flow diagrams, known constraints with impact analysis, and a file quick
+  reference table. Agents need to know *where things are* and *what will break*.
+- **Link validation**: All internal markdown links must be verified against the
+  filesystem before committing. Use a simple shell loop over referenced paths.
+- **Tag management**: The `v0.1.0` tag was originally placed on an older commit
+  (`c612717`) before all cleanup work landed. When retagging, delete locally with
+  `git tag -d` then recreate, and force-push with `git push origin <tag> --force`.
+- **Release merge pattern**: `develop` → `main` with `--no-ff` and a descriptive
+  merge commit (`release: v0.1.0`). Tag the merge commit, not develop HEAD.
