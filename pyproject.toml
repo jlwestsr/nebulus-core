@@ -27,6 +27,8 @@ dependencies = [
     "python-docx",
     "duckduckgo-search",
     "uvicorn",
+    "keyring",
+    "cryptography",
 ]
 
 [project.optional-dependencies]
