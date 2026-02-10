@@ -83,6 +83,16 @@ class PlatformAdapter(Protocol):
         """
         ...
 
+    @property
+    def mcp_settings(self) -> dict:
+        """MCP server configuration overrides.
+
+        Returns:
+            Dict with optional keys: workspace_path, allowed_commands,
+            server_name.
+        """
+        ...
+
     def platform_specific_commands(self) -> list:
         """Return additional Click commands for this platform."""
         ...

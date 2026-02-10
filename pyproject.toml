@@ -21,9 +21,19 @@ dependencies = [
     "sqlalchemy",
     "beautifulsoup4",
     "pyyaml",
+    "mcp[cli]",
+    "selectolax",
+    "pypdf",
+    "python-docx",
+    "duckduckgo-search",
+    "uvicorn",
 ]
 
 [project.optional-dependencies]
+google = [
+    "google-api-python-client",
+    "googlesearch-python",
+]
 dev = [
     "pytest",
     "black",

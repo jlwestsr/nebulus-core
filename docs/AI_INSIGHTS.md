@@ -14,11 +14,13 @@ you encounter a new pitfall or architectural constraint during development.
 ```text
 src/nebulus_core/
 ├── cli/              # Click CLI framework + commands
-│   └── commands/     # Service, model, memory command groups
+│   └── commands/     # Service, model, memory, tools command groups
 ├── platform/         # Adapter protocol, detection, registry
 ├── llm/              # OpenAI-compatible HTTP client
 ├── vector/           # ChromaDB client + episodic memory layer
 ├── memory/           # Models, graph store, consolidator
+├── mcp/              # MCP tool server (FastMCP, 10 tools)
+│   └── tools/        # filesystem, search, web, documents, shell
 ├── intelligence/     # Data ingestion, analysis, knowledge management
 │   ├── core/         # 13 engine modules (classifier, orchestrator, etc.)
 │   └── templates/    # Vertical templates (dealership, medical, legal)
@@ -32,7 +34,7 @@ point. Platform projects (Prime, Edge) implement this protocol and register via
 entry points. Core code accesses all platform-specific config through the adapter.
 
 Required properties: `platform_name`, `services`, `llm_base_url`, `chroma_settings`,
-`default_model`, `data_dir`.
+`default_model`, `data_dir`, `mcp_settings`.
 
 Required methods: `start_services()`, `stop_services()`, `restart_services()`,
 `get_logs()`, `platform_specific_commands()`.
@@ -118,7 +120,7 @@ Track `cleanup_20260207` completed 3 phases in a single session. Key learnings:
 - **Rich Table introspection in tests**: `Table.rows` objects don't stringify cell
   content. To assert on cell values, inspect `table.columns[i]._cells` instead.
 - **Test consistency standard**: All test methods must have `-> None` return type
-  hints and Google-style docstrings. This is now enforced across all 372 tests.
+  hints and Google-style docstrings. This is now enforced across all 437 tests.
 
 ### Cleanup Track Results (2026-02-07)
 
@@ -128,8 +130,8 @@ Track `cleanup_20260207` completed 3 phases in a single session. Key learnings:
 | 2 | Test coverage | 17 CLI tests, episodic.py mutation fix, consolidator.py JSONDecodeError fix |
 | 3 | Consistency & observability | 40 test type hints, 4 vector_engine.py loggers, AI_INSIGHTS update |
 
-Final metrics: 372 tests, 0 test methods missing `-> None`, 0 silent exception
-handlers, 0 known source defects, `black` + `flake8` clean.
+Final metrics (at time of cleanup): 372 tests, 0 test methods missing `-> None`,
+0 silent exception handlers, 0 known source defects, `black` + `flake8` clean.
 
 ### Cross-Repo Coordination
 
@@ -165,20 +167,93 @@ handlers, 0 known source defects, `black` + `flake8` clean.
 - All modules use constructor dependency injection (db_path, llm, vector_client)
 - 280 intelligence tests + 39 pre-existing = 319 total tests
 
-### Phase 4: Cleanup — IN PROGRESS
+### Phase 4: Cleanup — COMPLETE
 
 - Shared test fixtures and factories in `nebulus_core.testing`
 - Cleanup track `cleanup_20260207`: Phase 1 (core decoupling), Phase 2 (CLI tests,
   defect fixes), Phase 3 (test consistency, silent failure logging)
-- Replace duplicated code in nebulus-prime with nebulus-core imports
+- Documentation foundation: README.md and CONTEXT.md rewritten for v0.1.0
+- Tagged `v0.1.0` on `main` at merge commit `4fc3f76` (2026-02-09)
+
+### v0.1.0 Release Notes (2026-02-09)
+
+Release includes all 4 migration phases complete:
+- Platform Adapter protocol with auto-detection and entry point discovery
+- CLI framework (`nebulus` command) with service, model, and memory management
+- LLM client (OpenAI-compatible, httpx)
+- ChromaDB dual-mode vector storage (HTTP + embedded)
+- Knowledge graph (NetworkX + JSON persistence)
+- LLM-powered memory consolidation (episodic → graph)
+- Intelligence layer — 13 engine modules + 3 domain templates
+- Shared testing infrastructure (fixtures + factories)
+- 372 passing tests, `black` + `flake8` clean
+
+### MCP Core Migration (2026-02-09)
+
+Extracted 10 platform-agnostic MCP tools from `nebulus-prime/src/mcp_server/server.py`
+into `nebulus_core.mcp`. Prime's scheduler tools (3), LTM REST API, task management
+REST API, and web dashboard remain in Prime.
+
+**Module structure**: `config.py` (MCPConfig Pydantic model), `server.py` (create_server
+factory), `tools/` (5 modules: filesystem, search, web, documents, shell).
+
+**Key design decisions**:
+- Each tool module exports `register(mcp, config)` — decoupled from server creation.
+- `MCPConfig.workspace_path` replaces hardcoded `/workspace` — platform adapters inject
+  their own value via `mcp_settings`.
+- Security settings (allowed_commands, blocked_operators, command_timeout) are
+  configurable per-platform, not hardcoded.
+- Google search dependencies are optional (`pip install nebulus-core[google]`).
+- `FastMCP.list_tools()` is async in mcp 1.26+ — CLI `nebulus tools list` uses
+  `asyncio.run()` to bridge sync Click commands.
+
+**Dependencies added**: `mcp[cli]`, `selectolax`, `pypdf`, `python-docx`,
+`duckduckgo-search`, `uvicorn`. Optional: `google-api-python-client`,
+`googlesearch-python`.
+
+**Test patterns**: Tool modules tested by mocking `FastMCP.tool()` decorator with a
+capture pattern that stores registered functions by name. This avoids running a real
+MCP server while testing tool logic directly. Search helpers with lazy imports
+(googlesearch, googleapiclient) must be patched at source package path, not at the
+consuming module.
+
+65 new tests. Total: 437 tests, `black` + `flake8` clean.
+
+### Downstream Prime MCP Cleanup (2026-02-09)
+
+Refactored `nebulus-prime/src/mcp_server/server.py` to import tools from core instead
+of defining them locally. Net result: -501 lines across 5 files.
+
+**Changes**:
+- `server.py`: Replaced 10 local tool definitions + `_validate_path()` + 3 search
+  helpers with `create_server(MCPConfig(workspace_path="/workspace"))`. Only 3
+  scheduler tools remain Prime-local.
+- `requirements.txt`: Removed 8 packages now transitive via nebulus-core (`mcp[cli]`,
+  `duckduckgo-search`, `httpx`, `pypdf`, `python-docx`, `selectolax`, `chromadb`,
+  `beautifulsoup4`). Core ref updated from `@main` to `@develop`.
+- `adapter.py`: Added `mcp_settings` property to `PrimeAdapter`.
+- `test_mcp_tools.py`: Rewrote — 4 tests covering scheduler tools + `create_server`
+  config verification. Old filesystem/search/scrape tests removed (covered by core).
+- `test_parsers.py`: Deleted entirely (PDF/DOCX tests covered by core's 65 tests).
+
+**Patterns for future downstream migrations (Edge)**:
+- Mock `nebulus_core.mcp.create_server` with a `_make_mock_mcp()` helper that tracks
+  tool registrations via `tool.side_effect`. Verify platform-specific tools are
+  registered and that `create_server` receives the correct `MCPConfig`.
+- Don't recreate tests for core tools in platform repos — they're tested in core.
+
+### Post-v0.1.0 Remaining Work
+
+- ~~MCP server migration — extract MCP from Prime into `nebulus_core.mcp`~~ **Done** (2026-02-09)
+- ~~Downstream Prime cleanup — import MCP tools from core, remove duplicated tool code~~ **Done** (2026-02-09)
+- Replace remaining duplicated code in nebulus-prime with nebulus-core imports
 - Replace duplicated code in nebulus-edge with nebulus-core imports
 - Create EdgeAdapter
-- Tag v0.1.0
 
 ## 4. Documentation & Wiki
 
 *   **GitHub wiki**: Cloned at `../nebulus-core.wiki/` (sibling directory). Uses SSH remote (`git@github.com:jlwestsr/nebulus-core.wiki.git`), `master` branch.
-*   **Wiki pages** (8): Home, Architecture-Overview, Platform-Adapter-Protocol, Intelligence-Layer, Audit-Logger, Installation-Guide, LLM-Client, Vector-Client.
+*   **Wiki pages** (9): Home, Architecture-Overview, Platform-Adapter-Protocol, Intelligence-Layer, MCP-Tool-Server, Audit-Logger, Installation-Guide, LLM-Client, Vector-Client.
 *   **Wiki initialization**: GitHub wikis must be initialized via the web UI first (create one placeholder page), then local content can be force-pushed.
 *   **Ecosystem wikis**: All four project wikis are live:
     - `nebulus-core.wiki` — 8 pages (this project)
@@ -187,3 +262,19 @@ handlers, 0 known source defects, `black` + `flake8` clean.
     - `nebulus-prime.wiki` — 10 pages
 *   **Cross-project doc sync**: When a feature ships, update the corresponding wiki. Wiki repos are independent git repos — commit and push separately from the main repo.
 *   **Audit-Logger wiki page**: Documents the full AuditLogger API including common pitfalls (Path not str, AuditEvent not kwargs, timestamp required, get_events not query, audit_log not audit_events). Keep in sync with actual API if it changes.
+
+## 5. Documentation Learnings (2026-02-09)
+
+- **README.md scope**: For a shared library, document modules with usage examples and
+  API surface tables — not just a project structure tree. The PlatformAdapter protocol
+  table (6 properties + 5 methods) is the most referenced section by downstream devs.
+- **CONTEXT.md audience**: Written for AI agents, not humans. Include invariants,
+  data flow diagrams, known constraints with impact analysis, and a file quick
+  reference table. Agents need to know *where things are* and *what will break*.
+- **Link validation**: All internal markdown links must be verified against the
+  filesystem before committing. Use a simple shell loop over referenced paths.
+- **Tag management**: The `v0.1.0` tag was originally placed on an older commit
+  (`c612717`) before all cleanup work landed. When retagging, delete locally with
+  `git tag -d` then recreate, and force-push with `git push origin <tag> --force`.
+- **Release merge pattern**: `develop` → `main` with `--no-ff` and a descriptive
+  merge commit (`release: v0.1.0`). Tag the merge commit, not develop HEAD.
