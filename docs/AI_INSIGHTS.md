@@ -278,3 +278,56 @@ of defining them locally. Net result: -501 lines across 5 files.
   `git tag -d` then recreate, and force-push with `git push origin <tag> --force`.
 - **Release merge pattern**: `develop` → `main` with `--no-ff` and a descriptive
   merge commit (`release: v0.1.0`). Tag the merge commit, not develop HEAD.
+
+## 6. Gemini Ecosystem Watcher Extension (2026-02-09)
+
+### What Was Built
+
+Gemini CLI extension at `extensions/ecosystem-watcher/` that injects recent Overlord
+swarm activity into every Gemini session, enabling "shared consciousness" across agents.
+
+**Components**:
+- `gemini-extension.json` — Extension manifest
+- `hooks/hooks.json` — BeforeAgent hook declaration (fires before every agent turn)
+- `hooks/sync_memory.py` — Core logic: fetches 15 recent `update`/`decision` entries
+  from `OverlordMemory`, 5-min TTL file cache, outputs `additionalContext` Markdown
+- `commands/ecosystem-status.toml` — `/ecosystem-status` slash command for verbose output
+- 13 tests in `tests/test_extensions/test_sync_memory.py`
+
+### Key Design Decisions
+
+- **Reuses Phase 1 `OverlordMemory`**: Import happens inside the fetch function body
+  (lazy import) to avoid hard dependency if nebulus-core isn't installed in the Gemini
+  environment. This means `patch("sync_memory.OverlordMemory")` won't work in tests —
+  must patch at source: `patch("nebulus_core.memory.overlord.OverlordMemory")`.
+- **File-based TTL cache** at `.cache/memory_snapshot.json`: Avoids hitting SQLite on
+  every agent turn. 5-minute TTL is a tradeoff between freshness and overhead.
+- **Hook protocol**: stdout is reserved for the JSON response only. All diagnostics go
+  to stderr. Exit code 2 blocks the turn entirely — never use it for soft failures.
+- **Category filtering**: Only `update` and `decision` categories are fetched. Other
+  categories (failure, release, dispatch, pattern) are excluded to keep token overhead
+  manageable. The `/ecosystem-status` command uses the same filter.
+- **Timestamp trimming**: Timestamps truncated to minute precision (`[:16]`) in Markdown
+  output to save tokens.
+
+### Gemini Extension Patterns (Reference)
+
+- **Manifest** (`gemini-extension.json`): `name`, `version`, `description`. Hooks go in
+  separate `hooks/hooks.json`, not in the manifest.
+- **Hooks** (`hooks/hooks.json`): Nested structure — `hooks.BeforeAgent[].hooks[]` with
+  `type: "command"` and `command` field. Use `${extensionPath}` for portable paths.
+- **Hook output**: `{"hookSpecificOutput": {"additionalContext": "..."}}` — the string
+  is appended to the agent's context. Keep it Markdown, keep it concise.
+- **Custom commands** (`commands/*.toml`): `prompt` field (required), `description`
+  (optional). Shell execution via `!{...}`, file injection via `@{...}`, args via
+  `{{args}}`. Processing order: file → shell → args.
+- **Precedence**: Extension commands have lowest priority. Conflicts get prefixed with
+  extension name (e.g., `/ecosystem-watcher.ecosystem-status`).
+
+### Follow-Up Items (Flagged by Gemini PM)
+
+- **Cache platform-awareness**: Current cache lives relative to the extension directory.
+  May need routing through `PlatformAdapter` for Edge/Prime consistency if the extension
+  is installed in different locations per platform.
+- **Token overhead monitoring**: 15 entries is manageable now but should be monitored as
+  swarm activity scales. Consider dynamic limiting based on entry length.
