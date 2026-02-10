@@ -221,15 +221,16 @@ consuming module.
 
 ### Post-v0.1.0 Remaining Work
 
-- Replace duplicated code in nebulus-prime with nebulus-core imports
+- ~~MCP server migration — extract MCP from Prime into `nebulus_core.mcp`~~ **Done** (2026-02-09)
+- Downstream Prime cleanup — import MCP tools from core, remove duplicated tool code
+- Replace remaining duplicated code in nebulus-prime with nebulus-core imports
 - Replace duplicated code in nebulus-edge with nebulus-core imports
 - Create EdgeAdapter
-- Downstream Prime cleanup — import MCP tools from core, remove duplicated tool code
 
 ## 4. Documentation & Wiki
 
 *   **GitHub wiki**: Cloned at `../nebulus-core.wiki/` (sibling directory). Uses SSH remote (`git@github.com:jlwestsr/nebulus-core.wiki.git`), `master` branch.
-*   **Wiki pages** (8): Home, Architecture-Overview, Platform-Adapter-Protocol, Intelligence-Layer, Audit-Logger, Installation-Guide, LLM-Client, Vector-Client.
+*   **Wiki pages** (9): Home, Architecture-Overview, Platform-Adapter-Protocol, Intelligence-Layer, MCP-Tool-Server, Audit-Logger, Installation-Guide, LLM-Client, Vector-Client.
 *   **Wiki initialization**: GitHub wikis must be initialized via the web UI first (create one placeholder page), then local content can be force-pushed.
 *   **Ecosystem wikis**: All four project wikis are live:
     - `nebulus-core.wiki` — 8 pages (this project)
