@@ -53,6 +53,10 @@ class MockAdapter:
     def get_logs(self, service: str, follow: bool = False) -> None:
         pass
 
+    @property
+    def mcp_settings(self) -> dict:
+        return {}
+
     def platform_specific_commands(self) -> list:
         return []
 
