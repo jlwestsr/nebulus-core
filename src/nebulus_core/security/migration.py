@@ -27,10 +27,12 @@ class SecretsMigrator:
     """Migrates plaintext secrets from config files to encrypted storage."""
 
     # Patterns for extracting key-value pairs from common config formats
+    # Must have at least one non-quote, non-newline character for the value
+    # Use [ \t]* instead of \s* to avoid matching newlines
     ENV_PATTERN = re.compile(
-        r'^([A-Z_][A-Z0-9_]*)\s*=\s*["\']?([^"\'\n]+)["\']?$', re.MULTILINE
+        r'^([A-Z_][A-Z0-9_]*)[ \t]*=[ \t]*["\']?([^"\'\n]+)["\']?[ \t]*$', re.MULTILINE
     )
-    YAML_PATTERN = re.compile(r'^(\w+):\s*["\']?([^"\'\n]+)["\']?$', re.MULTILINE)
+    YAML_PATTERN = re.compile(r'^(\w+):[ \t]*["\']?([^"\'\n]+)["\']?[ \t]*$', re.MULTILINE)
 
     # Keys that likely contain secrets (case-insensitive matching)
     SECRET_KEY_PATTERNS = [
@@ -83,7 +85,8 @@ class SecretsMigrator:
 
         secrets = {}
         for key, value in matches:
-            if self.is_secret_key(key) and value and value != "":
+            value = value.strip()
+            if self.is_secret_key(key) and value:
                 secrets[key.lower()] = value
 
         return secrets
@@ -105,7 +108,8 @@ class SecretsMigrator:
 
         secrets = {}
         for key, value in matches:
-            if self.is_secret_key(key) and value and value != "":
+            value = value.strip()
+            if self.is_secret_key(key) and value:
                 secrets[key.lower()] = value
 
         return secrets
@@ -161,6 +165,7 @@ class SecretsMigrator:
         total_migrated = 0
         all_errors = []
         source_files = []
+        processed_files = set()  # Track processed files to avoid duplicates
 
         # File patterns to scan
         patterns = ["**/.env*", "**/*.env", "**/*.yml", "**/*.yaml"]
@@ -176,7 +181,12 @@ class SecretsMigrator:
                 if any(skip_dir in file_path.parts for skip_dir in skip_dirs):
                     continue
 
+                # Skip if already processed
+                if file_path in processed_files:
+                    continue
+
                 if file_path.is_file():
+                    processed_files.add(file_path)
                     try:
                         migrated, errors = self.migrate_from_file(file_path)
                         if migrated > 0:

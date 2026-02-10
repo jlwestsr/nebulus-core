@@ -33,10 +33,10 @@ class SecretsAuditor:
         "github_token": (re.compile(r"ghp_[a-zA-Z0-9]{36}"), "HIGH"),
         "github_oauth": (re.compile(r"gho_[a-zA-Z0-9]{36}"), "HIGH"),
         "aws_access_key": (re.compile(r"AKIA[0-9A-Z]{16}"), "HIGH"),
-        "generic_api_key": (re.compile(r"['\"]?api[_-]?key['\"]?\s*[:=]\s*['\"]?[a-zA-Z0-9_-]{20,}"), "MEDIUM"),
-        "generic_secret": (re.compile(r"['\"]?secret['\"]?\s*[:=]\s*['\"]?[a-zA-Z0-9_-]{20,}"), "MEDIUM"),
-        "generic_token": (re.compile(r"['\"]?token['\"]?\s*[:=]\s*['\"]?[a-zA-Z0-9_-]{20,}"), "MEDIUM"),
-        "password": (re.compile(r"['\"]?password['\"]?\s*[:=]\s*['\"]?[^\s'\"]{8,}"), "MEDIUM"),
+        "generic_api_key": (re.compile(r"['\"]?api[_-]?key['\"]?\s*[:=]\s*['\"]?[a-zA-Z0-9_-]{20,}", re.IGNORECASE), "MEDIUM"),
+        "generic_secret": (re.compile(r"['\"]?secret['\"]?\s*[:=]\s*['\"]?[a-zA-Z0-9_-]{20,}", re.IGNORECASE), "MEDIUM"),
+        "generic_token": (re.compile(r"['\"]?token['\"]?\s*[:=]\s*['\"]?[a-zA-Z0-9_-]{20,}", re.IGNORECASE), "MEDIUM"),
+        "password": (re.compile(r"['\"]?password['\"]?\s*[:=]\s*['\"]?[^\s'\"]{8,}", re.IGNORECASE), "MEDIUM"),
         "bearer_token": (re.compile(r"Bearer\s+[a-zA-Z0-9_-]{20,}"), "HIGH"),
         "basic_auth": (re.compile(r"Basic\s+[A-Za-z0-9+/]{20,}={0,2}"), "HIGH"),
     }
@@ -112,7 +112,10 @@ class SecretsAuditor:
             return False
         if path.suffix in self.SCAN_EXTENSIONS:
             return True
-        # Also scan files without extension (like .env, Dockerfile)
+        # Also scan files named .env or similar (even though they start with .)
+        if path.name.startswith(".env"):
+            return True
+        # Also scan files without extension (like Dockerfile)
         if not path.suffix and not path.name.startswith("."):
             return True
         return False

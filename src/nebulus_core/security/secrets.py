@@ -27,17 +27,29 @@ class SecretsManager:
     """
 
     SERVICE_NAME = "nebulus"
-    FALLBACK_DIR = Path.home() / ".nebulus" / "secrets"
-    FALLBACK_KEY_FILE = FALLBACK_DIR / ".key"
-    FALLBACK_DATA_FILE = FALLBACK_DIR / "secrets.enc"
 
-    def __init__(self, use_keyring: bool | None = None) -> None:
+    def __init__(
+        self,
+        use_keyring: bool | None = None,
+        fallback_dir: Path | None = None,
+    ) -> None:
         """Initialize the secrets manager.
 
         Args:
             use_keyring: Force keyring on (True) or fallback mode (False).
                 If None (default), auto-detect keyring availability.
+            fallback_dir: Directory for fallback encrypted storage.
+                If None, uses ~/.nebulus/secrets.
         """
+        # Set instance-level paths
+        if fallback_dir is None:
+            self.FALLBACK_DIR = Path.home() / ".nebulus" / "secrets"
+        else:
+            self.FALLBACK_DIR = Path(fallback_dir)
+
+        self.FALLBACK_KEY_FILE = self.FALLBACK_DIR / ".key"
+        self.FALLBACK_DATA_FILE = self.FALLBACK_DIR / "secrets.enc"
+
         if use_keyring is None:
             self._use_keyring = KEYRING_AVAILABLE and self._test_keyring()
         else:
@@ -104,6 +116,29 @@ class SecretsManager:
         self.FALLBACK_DATA_FILE.write_bytes(encrypted)
         self.FALLBACK_DATA_FILE.chmod(0o600)
 
+    def _update_keyring_metadata(self, key: str, add: bool) -> None:
+        """Update keyring metadata to track secret keys.
+
+        Args:
+            key: Secret key to add or remove.
+            add: If True, add key to metadata; if False, remove it.
+        """
+        if not KEYRING_AVAILABLE or not self._use_keyring:
+            return
+
+        metadata = keyring.get_password(self.SERVICE_NAME, "__metadata__")
+        if metadata:
+            keys = set(json.loads(metadata))
+        else:
+            keys = set()
+
+        if add:
+            keys.add(key)
+        else:
+            keys.discard(key)
+
+        keyring.set_password(self.SERVICE_NAME, "__metadata__", json.dumps(sorted(keys)))
+
     def store_secret(self, key: str, value: str) -> None:
         """Store a secret.
 
@@ -119,6 +154,8 @@ class SecretsManager:
 
         if self._use_keyring:
             keyring.set_password(self.SERVICE_NAME, key, value)
+            # Update metadata to track keys
+            self._update_keyring_metadata(key, add=True)
         else:
             data = self._read_fallback_data()
             data[key] = value
@@ -151,6 +188,8 @@ class SecretsManager:
         if self._use_keyring:
             try:
                 keyring.delete_password(self.SERVICE_NAME, key)
+                # Update metadata to track keys
+                self._update_keyring_metadata(key, add=False)
                 return True
             except keyring.errors.PasswordDeleteError:
                 return False
