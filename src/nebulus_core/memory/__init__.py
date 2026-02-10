@@ -1,7 +1,12 @@
-"""Knowledge graph and memory consolidation."""
+"""Knowledge graph, memory consolidation, and Overlord operational memory."""
 
 from nebulus_core.memory.graph_store import GraphStore
 from nebulus_core.memory.models import Entity, GraphStats, MemoryItem, Relation
+from nebulus_core.memory.overlord import (
+    VALID_CATEGORIES,
+    MemoryEntry,
+    OverlordMemory,
+)
 
 
 def __getattr__(name: str):
@@ -18,6 +23,9 @@ __all__ = [
     "Entity",
     "GraphStats",
     "GraphStore",
+    "MemoryEntry",
     "MemoryItem",
+    "OverlordMemory",
     "Relation",
+    "VALID_CATEGORIES",
 ]
