@@ -19,7 +19,7 @@ Nebulus Core is the platform-agnostic backbone of the Nebulus stack. It provides
 | Models | Pydantic | Data validation and serialization |
 | Data | Pandas + SQLAlchemy | Data processing, ingestion, and text-to-SQL |
 | Parsing | BeautifulSoup4 + PyYAML | HTML parsing and YAML config loading |
-| Testing | pytest | 372 unit tests with full mock coverage |
+| Testing | pytest | 437 unit tests with full mock coverage |
 
 ## Architecture
 
@@ -61,6 +61,7 @@ The `nebulus` CLI auto-detects the platform (Linux or macOS ARM) and loads the r
 - **`nebulus services`** — `up`, `down`, `restart`, `logs` for platform services
 - **`nebulus models`** — `list` available LLM models from the inference server
 - **`nebulus memory`** — `status` of LTM systems, `consolidate` to trigger a memory cycle
+- **`nebulus tools`** — `start` the MCP tool server, `list` registered tools
 
 Platform adapters can inject additional commands via `platform_specific_commands()`.
 
@@ -116,6 +117,20 @@ Supports: `chat()`, `list_models()`, `health_check()`, and context manager usage
 - **`GraphStore`** — NetworkX directed graph persisted as JSON. Stores entities and relations extracted from memory.
 - **`Consolidator`** — LLM-powered "sleep cycle" that processes unarchived episodic memories, extracts entities and relations, and writes them to the graph store.
 - **Pydantic models:** `Entity`, `Relation`, `MemoryItem`, `GraphStats`.
+
+### `mcp` — MCP Tool Server
+
+Platform-agnostic [Model Context Protocol](https://modelcontextprotocol.io/) tool server. Provides 10 tools (filesystem operations, web search, code search, web scraping, document parsing, shell execution) that any platform project can assemble into a running server.
+
+```python
+from nebulus_core.mcp import MCPConfig, create_server
+
+config = MCPConfig(workspace_path=Path("/my/workspace"))
+mcp = create_server(config)
+app = mcp.sse_app()  # Starlette ASGI app
+```
+
+Platform adapters supply workspace paths and security settings via `mcp_settings`. The CLI exposes `nebulus tools start` and `nebulus tools list`.
 
 ### `intelligence` — Query Orchestration
 
