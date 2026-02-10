@@ -330,4 +330,22 @@ swarm activity into every Gemini session, enabling "shared consciousness" across
   May need routing through `PlatformAdapter` for Edge/Prime consistency if the extension
   is installed in different locations per platform.
 - **Token overhead monitoring**: 15 entries is manageable now but should be monitored as
-  swarm activity scales. Consider dynamic limiting based on entry length.
+  swarm activity scales. Consider dynamic limiting based on entry length. Gemini PM
+  elevated this to high priority (2026-02-09).
+
+### Gemini Headless Mode Limitations
+
+Gemini CLI in headless mode (`gemini -p "..."`) has restricted tool access — `codebase_investigator`,
+`run_shell_command`, and `cli_help` all return "Tool execution denied by policy." This means
+Gemini cannot execute `overlord memory remember` commands or read files when invoked headlessly.
+Workaround: log Overlord memory entries directly via `OverlordMemory.remember()` in Python
+and relay the confirmation to Gemini.
+
+### Session Handoff Notes (2026-02-09)
+
+- **Next priority** (per Gemini PM): nebulus-atom v2 design implementation per
+  `nebulus-atom/docs/plans/2026-02-05-nebulus-atom-v2-design.md`. Check
+  `conductor/tracks.md` for sub-tasks. Verify no other agents are active in the repo.
+- **All ecosystem-watcher deliverables complete**: extension built, tested (467 passing),
+  committed, pushed, documented in AI_INSIGHTS, logged to Overlord memory, posted to
+  #nebulus-ops, and approved by Gemini PM.
