@@ -78,6 +78,62 @@ class VectorClient:
         """
         self.client.delete_collection(name=name)
 
+    def add_documents(
+        self,
+        collection_name: str,
+        ids: list[str],
+        documents: list[str],
+        metadatas: list[dict] | None = None,
+    ) -> None:
+        """Add documents to a collection (creates collection if needed).
+
+        Args:
+            collection_name: Target collection name.
+            ids: Document IDs.
+            documents: Document texts.
+            metadatas: Optional metadata dicts per document.
+        """
+        collection = self.get_or_create_collection(collection_name)
+        collection.add(
+            ids=ids,
+            documents=documents,
+            metadatas=metadatas or [{}] * len(ids),
+        )
+
+    def search(
+        self,
+        collection_name: str,
+        query: str,
+        n_results: int = 5,
+        where: dict | None = None,
+    ) -> dict:
+        """Semantic search in a collection.
+
+        Args:
+            collection_name: Collection to search.
+            query: Query text.
+            n_results: Maximum number of results.
+            where: Optional ChromaDB where filter.
+
+        Returns:
+            ChromaDB query result dict with ids, documents, distances, metadatas.
+        """
+        collection = self.get_or_create_collection(collection_name)
+        kwargs: dict = {"query_texts": [query], "n_results": n_results}
+        if where is not None:
+            kwargs["where"] = where
+        return collection.query(**kwargs)
+
+    def delete_documents(self, collection_name: str, ids: list[str]) -> None:
+        """Delete documents by ID from a collection.
+
+        Args:
+            collection_name: Collection containing the documents.
+            ids: Document IDs to delete.
+        """
+        collection = self.get_or_create_collection(collection_name)
+        collection.delete(ids=ids)
+
     def heartbeat(self) -> bool:
         """Check if ChromaDB is reachable.
 

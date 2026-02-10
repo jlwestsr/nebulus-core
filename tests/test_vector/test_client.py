@@ -69,3 +69,122 @@ class TestVectorClientHeartbeat:
             )
 
         assert client.heartbeat() is True
+
+
+class TestVectorClientAddDocuments:
+    """Tests for add_documents convenience method."""
+
+    def _make_client(self) -> tuple[VectorClient, MagicMock]:
+        mock_chroma = MagicMock()
+        with patch("nebulus_core.vector.client.chromadb") as mock_mod:
+            mock_mod.HttpClient.return_value = mock_chroma
+            client = VectorClient(
+                settings={"mode": "http", "host": "localhost", "port": 8001}
+            )
+        return client, mock_chroma
+
+    def test_add_documents_creates_collection_and_adds(self) -> None:
+        """add_documents should get_or_create collection then call add."""
+        client, mock_chroma = self._make_client()
+        mock_collection = MagicMock()
+        mock_chroma.get_or_create_collection.return_value = mock_collection
+
+        client.add_documents(
+            "test_col", ids=["1", "2"], documents=["doc1", "doc2"]
+        )
+
+        mock_chroma.get_or_create_collection.assert_called_once_with(name="test_col")
+        mock_collection.add.assert_called_once_with(
+            ids=["1", "2"], documents=["doc1", "doc2"], metadatas=[{}, {}]
+        )
+
+    def test_add_documents_passes_metadatas(self) -> None:
+        """add_documents should forward explicit metadatas."""
+        client, mock_chroma = self._make_client()
+        mock_collection = MagicMock()
+        mock_chroma.get_or_create_collection.return_value = mock_collection
+
+        metas = [{"k": "v1"}, {"k": "v2"}]
+        client.add_documents(
+            "col", ids=["1", "2"], documents=["a", "b"], metadatas=metas
+        )
+
+        mock_collection.add.assert_called_once_with(
+            ids=["1", "2"], documents=["a", "b"], metadatas=metas
+        )
+
+
+class TestVectorClientSearch:
+    """Tests for search convenience method."""
+
+    def _make_client(self) -> tuple[VectorClient, MagicMock]:
+        mock_chroma = MagicMock()
+        with patch("nebulus_core.vector.client.chromadb") as mock_mod:
+            mock_mod.HttpClient.return_value = mock_chroma
+            client = VectorClient(
+                settings={"mode": "http", "host": "localhost", "port": 8001}
+            )
+        return client, mock_chroma
+
+    def test_search_basic(self) -> None:
+        """search should query the collection and return results."""
+        client, mock_chroma = self._make_client()
+        mock_collection = MagicMock()
+        expected = {"ids": [["1"]], "documents": [["doc1"]], "distances": [[0.1]]}
+        mock_collection.query.return_value = expected
+        mock_chroma.get_or_create_collection.return_value = mock_collection
+
+        result = client.search("col", "hello", n_results=3)
+
+        mock_collection.query.assert_called_once_with(
+            query_texts=["hello"], n_results=3
+        )
+        assert result == expected
+
+    def test_search_with_where_filter(self) -> None:
+        """search should pass where filter when provided."""
+        client, mock_chroma = self._make_client()
+        mock_collection = MagicMock()
+        mock_collection.query.return_value = {"ids": [[]], "documents": [[]]}
+        mock_chroma.get_or_create_collection.return_value = mock_collection
+
+        where = {"category": "docs"}
+        client.search("col", "query", where=where)
+
+        mock_collection.query.assert_called_once_with(
+            query_texts=["query"], n_results=5, where=where
+        )
+
+    def test_search_without_where_omits_key(self) -> None:
+        """search without where should not pass where kwarg."""
+        client, mock_chroma = self._make_client()
+        mock_collection = MagicMock()
+        mock_collection.query.return_value = {"ids": [[]], "documents": [[]]}
+        mock_chroma.get_or_create_collection.return_value = mock_collection
+
+        client.search("col", "query")
+
+        mock_collection.query.assert_called_once_with(
+            query_texts=["query"], n_results=5
+        )
+
+
+class TestVectorClientDeleteDocuments:
+    """Tests for delete_documents convenience method."""
+
+    def test_delete_documents(self) -> None:
+        """delete_documents should get collection and call delete."""
+        mock_chroma = MagicMock()
+        with patch("nebulus_core.vector.client.chromadb") as mock_mod:
+            mock_mod.HttpClient.return_value = mock_chroma
+            client = VectorClient(
+                settings={"mode": "http", "host": "localhost", "port": 8001}
+            )
+
+        mock_collection = MagicMock()
+        mock_chroma.get_or_create_collection.return_value = mock_collection
+
+        client.delete_documents("col", ids=["a", "b"])
+
+        mock_chroma.get_or_create_collection.assert_called_once_with(name="col")
+        mock_collection.delete.assert_called_once_with(ids=["a", "b"])
