@@ -219,10 +219,33 @@ consuming module.
 
 65 new tests. Total: 437 tests, `black` + `flake8` clean.
 
+### Downstream Prime MCP Cleanup (2026-02-09)
+
+Refactored `nebulus-prime/src/mcp_server/server.py` to import tools from core instead
+of defining them locally. Net result: -501 lines across 5 files.
+
+**Changes**:
+- `server.py`: Replaced 10 local tool definitions + `_validate_path()` + 3 search
+  helpers with `create_server(MCPConfig(workspace_path="/workspace"))`. Only 3
+  scheduler tools remain Prime-local.
+- `requirements.txt`: Removed 8 packages now transitive via nebulus-core (`mcp[cli]`,
+  `duckduckgo-search`, `httpx`, `pypdf`, `python-docx`, `selectolax`, `chromadb`,
+  `beautifulsoup4`). Core ref updated from `@main` to `@develop`.
+- `adapter.py`: Added `mcp_settings` property to `PrimeAdapter`.
+- `test_mcp_tools.py`: Rewrote — 4 tests covering scheduler tools + `create_server`
+  config verification. Old filesystem/search/scrape tests removed (covered by core).
+- `test_parsers.py`: Deleted entirely (PDF/DOCX tests covered by core's 65 tests).
+
+**Patterns for future downstream migrations (Edge)**:
+- Mock `nebulus_core.mcp.create_server` with a `_make_mock_mcp()` helper that tracks
+  tool registrations via `tool.side_effect`. Verify platform-specific tools are
+  registered and that `create_server` receives the correct `MCPConfig`.
+- Don't recreate tests for core tools in platform repos — they're tested in core.
+
 ### Post-v0.1.0 Remaining Work
 
 - ~~MCP server migration — extract MCP from Prime into `nebulus_core.mcp`~~ **Done** (2026-02-09)
-- Downstream Prime cleanup — import MCP tools from core, remove duplicated tool code
+- ~~Downstream Prime cleanup — import MCP tools from core, remove duplicated tool code~~ **Done** (2026-02-09)
 - Replace remaining duplicated code in nebulus-prime with nebulus-core imports
 - Replace duplicated code in nebulus-edge with nebulus-core imports
 - Create EdgeAdapter
