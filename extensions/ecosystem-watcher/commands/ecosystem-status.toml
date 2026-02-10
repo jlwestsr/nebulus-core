@@ -1,0 +1,29 @@
+description = "Show recent Overlord swarm activity (updates + decisions)"
+
+prompt = """Fetch and display the latest ecosystem activity from the Overlord memory store.
+
+Run the following command and present its output verbosely, formatted for human reading with timestamps, categories, projects, and content:
+
+!{python3 -c "
+import json, sys
+sys.path.insert(0, '${extensionPath}/hooks')
+from sync_memory import _fetch_entries, _write_cache
+
+entries = _fetch_entries()
+_write_cache(entries)
+
+if not entries:
+    print('No recent swarm activity found.')
+else:
+    print(f'=== Overlord Swarm Activity ({len(entries)} entries) ===')
+    print()
+    for e in entries:
+        ts = e['timestamp'][:19].replace('T', ' ')
+        proj = e.get('project') or 'ecosystem'
+        print(f'  [{ts}] {e[\"category\"].upper():>8}  {proj:<20} {e[\"content\"]}')
+    print()
+    print('--- End of activity log ---')
+"}
+
+Present the output above as-is. If there are notable patterns (e.g. recent releases, failures, or decisions), briefly highlight them.
+"""

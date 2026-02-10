@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "BeforeAgent": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${extensionPath}/hooks/sync_memory.py",
+            "name": "ecosystem-watcher",
+            "timeout": 10000,
+            "description": "Injects recent Overlord memory (updates + decisions) into agent context."
+          }
+        ]
+      }
+    ]
+  }
+}
