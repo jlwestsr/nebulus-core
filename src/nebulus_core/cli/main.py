@@ -10,6 +10,7 @@ from nebulus_core.cli.commands.services import services_group
 from nebulus_core.cli.commands.models import models_group
 from nebulus_core.cli.commands.memory import memory_group
 from nebulus_core.cli.commands.tools import tools_group
+from nebulus_core.cli.commands.secrets import secrets_group
 from nebulus_core.platform import detect_platform, load_adapter
 
 console = Console()
@@ -75,3 +76,4 @@ cli.add_command(services_group, "service")
 cli.add_command(models_group, "model")
 cli.add_command(memory_group, "memory")
 cli.add_command(tools_group, "tools")
+cli.add_command(secrets_group, "secrets")
