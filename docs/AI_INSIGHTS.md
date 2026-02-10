@@ -14,11 +14,13 @@ you encounter a new pitfall or architectural constraint during development.
 ```text
 src/nebulus_core/
 ├── cli/              # Click CLI framework + commands
-│   └── commands/     # Service, model, memory command groups
+│   └── commands/     # Service, model, memory, tools command groups
 ├── platform/         # Adapter protocol, detection, registry
 ├── llm/              # OpenAI-compatible HTTP client
 ├── vector/           # ChromaDB client + episodic memory layer
 ├── memory/           # Models, graph store, consolidator
+├── mcp/              # MCP tool server (FastMCP, 10 tools)
+│   └── tools/        # filesystem, search, web, documents, shell
 ├── intelligence/     # Data ingestion, analysis, knowledge management
 │   ├── core/         # 13 engine modules (classifier, orchestrator, etc.)
 │   └── templates/    # Vertical templates (dealership, medical, legal)
@@ -32,7 +34,7 @@ point. Platform projects (Prime, Edge) implement this protocol and register via
 entry points. Core code accesses all platform-specific config through the adapter.
 
 Required properties: `platform_name`, `services`, `llm_base_url`, `chroma_settings`,
-`default_model`, `data_dir`.
+`default_model`, `data_dir`, `mcp_settings`.
 
 Required methods: `start_services()`, `stop_services()`, `restart_services()`,
 `get_logs()`, `platform_specific_commands()`.
@@ -118,7 +120,7 @@ Track `cleanup_20260207` completed 3 phases in a single session. Key learnings:
 - **Rich Table introspection in tests**: `Table.rows` objects don't stringify cell
   content. To assert on cell values, inspect `table.columns[i]._cells` instead.
 - **Test consistency standard**: All test methods must have `-> None` return type
-  hints and Google-style docstrings. This is now enforced across all 372 tests.
+  hints and Google-style docstrings. This is now enforced across all 437 tests.
 
 ### Cleanup Track Results (2026-02-07)
 
@@ -128,8 +130,8 @@ Track `cleanup_20260207` completed 3 phases in a single session. Key learnings:
 | 2 | Test coverage | 17 CLI tests, episodic.py mutation fix, consolidator.py JSONDecodeError fix |
 | 3 | Consistency & observability | 40 test type hints, 4 vector_engine.py loggers, AI_INSIGHTS update |
 
-Final metrics: 372 tests, 0 test methods missing `-> None`, 0 silent exception
-handlers, 0 known source defects, `black` + `flake8` clean.
+Final metrics (at time of cleanup): 372 tests, 0 test methods missing `-> None`,
+0 silent exception handlers, 0 known source defects, `black` + `flake8` clean.
 
 ### Cross-Repo Coordination
 
@@ -186,12 +188,43 @@ Release includes all 4 migration phases complete:
 - Shared testing infrastructure (fixtures + factories)
 - 372 passing tests, `black` + `flake8` clean
 
+### MCP Core Migration (2026-02-09)
+
+Extracted 10 platform-agnostic MCP tools from `nebulus-prime/src/mcp_server/server.py`
+into `nebulus_core.mcp`. Prime's scheduler tools (3), LTM REST API, task management
+REST API, and web dashboard remain in Prime.
+
+**Module structure**: `config.py` (MCPConfig Pydantic model), `server.py` (create_server
+factory), `tools/` (5 modules: filesystem, search, web, documents, shell).
+
+**Key design decisions**:
+- Each tool module exports `register(mcp, config)` — decoupled from server creation.
+- `MCPConfig.workspace_path` replaces hardcoded `/workspace` — platform adapters inject
+  their own value via `mcp_settings`.
+- Security settings (allowed_commands, blocked_operators, command_timeout) are
+  configurable per-platform, not hardcoded.
+- Google search dependencies are optional (`pip install nebulus-core[google]`).
+- `FastMCP.list_tools()` is async in mcp 1.26+ — CLI `nebulus tools list` uses
+  `asyncio.run()` to bridge sync Click commands.
+
+**Dependencies added**: `mcp[cli]`, `selectolax`, `pypdf`, `python-docx`,
+`duckduckgo-search`, `uvicorn`. Optional: `google-api-python-client`,
+`googlesearch-python`.
+
+**Test patterns**: Tool modules tested by mocking `FastMCP.tool()` decorator with a
+capture pattern that stores registered functions by name. This avoids running a real
+MCP server while testing tool logic directly. Search helpers with lazy imports
+(googlesearch, googleapiclient) must be patched at source package path, not at the
+consuming module.
+
+65 new tests. Total: 437 tests, `black` + `flake8` clean.
+
 ### Post-v0.1.0 Remaining Work
 
 - Replace duplicated code in nebulus-prime with nebulus-core imports
 - Replace duplicated code in nebulus-edge with nebulus-core imports
 - Create EdgeAdapter
-- MCP server migration — extract MCP from Prime into `nebulus_core.mcp`
+- Downstream Prime cleanup — import MCP tools from core, remove duplicated tool code
 
 ## 4. Documentation & Wiki
 
