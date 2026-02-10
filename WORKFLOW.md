@@ -32,6 +32,7 @@ pip install -e ../nebulus-core
 - **NEVER commit directly to `main`.** All work happens on feature branches.
 - **Branch workflow:** Create a branch with `feat/`, `fix/`, `docs/`, `chore/` prefix → do all work there → merge into `develop` when complete.
 - **`develop`** is the integration branch. `main` is for releases only.
+- **Temporary branches are LOCAL ONLY**: `feat/`, `fix/`, `docs/`, `chore/` branches do NOT get pushed to origin. Merge locally into `develop`, then push `develop`.
 - **Push Authorization**: All pushes to `origin` require explicit, just-in-time user approval.
 
 ## Workflows by Commit Type

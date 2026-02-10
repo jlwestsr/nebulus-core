@@ -76,6 +76,7 @@ docs/
 
 - **NEVER commit directly to `main`.** All work happens on feature branches.
 - **Branch → develop → main**: Create a `feat/`/`fix/`/`docs/`/`chore/` branch from `develop`, do all work there, merge into `develop` when complete. `main` is for releases only.
+- **Temporary branches are LOCAL ONLY**: `feat/`, `fix/`, `docs/`, `chore/` branches do NOT get pushed to origin. Merge locally into `develop`, then push `develop`.
 - **Conventional commits**: `feat:`, `fix:`, `docs:`, `chore:` prefixes
 - `git push origin` requires explicit user approval — always ask first
 
