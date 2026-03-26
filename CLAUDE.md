@@ -48,7 +48,17 @@ src/nebulus_core/
     models.py           # Entity, Relation, MemoryItem, GraphStats
     graph_store.py      # NetworkX knowledge graph (GraphStore)
     consolidator.py     # LLM-powered memory consolidation (Consolidator)
-  intelligence/         # Phase 3 — not yet populated
+    overlord.py         # Overlord memory integration
+  intelligence/         # Phase 3 — contains core/ and templates/ subdirectories
+  mcp/
+    config.py           # MCP server configuration
+    server.py           # MCP server entry point
+    tools/              # MCP tool implementations
+  security/
+    audit.py            # Security audit utilities
+    encryption.py       # Encryption helpers
+    migration.py        # Security migration utilities
+    secrets.py          # Secrets management
   testing/              # Shared test utilities
 tests/                  # Unit tests (pytest)
 docs/
